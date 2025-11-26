@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"golang.org/x/sys/unix"
 )
 
@@ -25,9 +25,9 @@ const (
 // NewID returns 10 bytes of a new UUID4 as a string.
 //
 // This should be unique enough for short-lived cases, but as it's only a
-// partial UUID4.
+// partial UUID.
 func NewID() string {
-	fullUUID := uuid.NewV4()
+	fullUUID := uuid.New()
 	last10 := fullUUID[len(fullUUID)-10:]
 	return string(last10)
 }
@@ -63,7 +63,7 @@ func HandleError(err error) {
 func HandleMinorError(err error) {
 	if err != nil {
 		// Could have this logging to Sentry
-		//log.Printf("ERROR TYPE: %#v\n", err)
+		// log.Printf("ERROR TYPE: %#v\n", err)
 		// NOTE(dmar): Very annoying downside of this separate method
 		//			   approach is that this is the line number which
 		//			   appears in logs. Not the actual source.
@@ -76,7 +76,7 @@ func HandleMinorError(err error) {
 func HandleFatalError(err error) {
 	if err != nil {
 		// Could have this logging to Sentry
-		//log.Printf("ERROR TYPE: %#v\n", err)
+		// log.Printf("ERROR TYPE: %#v\n", err)
 		log.Fatal("ERROR: ", err)
 	}
 }
