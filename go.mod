@@ -1,11 +1,11 @@
-module github.com/dropbox/llama
+module github.com/nsw3550/llama
 
 go 1.12
 
 require (
+	github.com/dropbox/llama v0.0.0-20190529192750-c81f3ba6f868
 	github.com/gogo/protobuf v1.2.1
 	github.com/influxdata/influxdb1-client v0.0.0-20190402204710-8ff2fc3824fc
-	github.com/kr/pretty v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/satori/go.uuid v1.2.0
 	golang.org/x/sys v0.0.0-20190410235845-0ad05ae3009d

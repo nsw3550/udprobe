@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	"github.com/dropbox/llama"
-	"golang.org/x/time/rate"
 	"log"
 	"net"
 	"strconv"
+
+	"github.com/nsw3550/llama"
+	"golang.org/x/time/rate"
 )
 
 var port = flag.Int("port", 8100, "Port to listen on for probes")

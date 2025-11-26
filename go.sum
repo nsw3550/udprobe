@@ -1,3 +1,5 @@
+github.com/dropbox/llama v0.0.0-20190529192750-c81f3ba6f868 h1:tbu6jCExeRiRjORd26Vc4bBDKHKYBBpYiDmKonwaQ34=
+github.com/dropbox/llama v0.0.0-20190529192750-c81f3ba6f868/go.mod h1:UIiY+hN8+Co6lDQqZpd2gfg5o90QcHSKnGtQDSGKdXw=
 github.com/gogo/protobuf v1.2.1 h1:/s5zKNz0uPFCZ5hddgPdo2TK2TVrUNMn0OOX8/aZMTE=
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/influxdata/influxdb1-client v0.0.0-20190402204710-8ff2fc3824fc h1:KpMgaYJRieDkHZJWY3LMafvtqS/U8xX6+lUN+OKpl/Y=
