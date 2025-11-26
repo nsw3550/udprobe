@@ -1,11 +1,13 @@
 package llama
 
 import (
-	pb "github.com/dropbox/llama/proto"
-	"golang.org/x/time/rate"
 	"log"
 	"net"
 	"time"
+
+	pb "github.com/nsw3550/llama/proto"
+	"golang.org/x/time/rate"
+	"google.golang.org/protobuf/proto"
 )
 
 // Reflect will listen on the provided UDPConn and will send back any UdpData
@@ -41,11 +43,11 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		// But for now, all we need is to make sure it's llama data
 		// and get the ToS value.
 		pbProbe := &pb.Probe{}
-		err := pbProbe.Unmarshal(data)
+		err := proto.Unmarshal(data, pbProbe)
 		if err != nil {
 			// Else, don't reflect bad data
 			log.Println("Error hit when unmarshalling probe")
-			//TODO(dmar): Log rate of `packets_bad_data`
+			// TODO(dmar): Log rate of `packets_bad_data`
 			HandleMinorError(err)
 			continue
 		}
@@ -59,14 +61,15 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 
 		// Send the data back to sender
 		Send(data, conn, addr)
-		//TODO(dmar): Log rate of `packets_processed`
+		// TODO(dmar): Log rate of `packets_processed`
 	}
 }
 
 // Receive accepts UDP packets on the provided conn and returns the data and
 // and control message slices, as well as the UDPAddr it was received from.
 func Receive(data []byte, oob []byte, conn *net.UDPConn) (
-	[]byte, []byte, *net.UDPAddr) {
+	[]byte, []byte, *net.UDPAddr,
+) {
 	// Receive the data from the connection
 	dataLen, oobLen, _, addr, err := conn.ReadMsgUDP(data, oob)
 	HandleError(err)

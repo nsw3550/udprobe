@@ -11,7 +11,8 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 
-	pb "github.com/dropbox/llama/proto"
+	pb "github.com/nsw3550/llama/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Port represents a socket and its associated caching, inputs, and outputs.
@@ -101,7 +102,7 @@ func (p *Port) send() {
 			p.cache.SetDefault(key, &probe)
 			signature := IDToBytes(key)
 			var padding [1000]byte
-			data := pb.Probe{
+			data := &pb.Probe{
 				Signature: signature[:],
 				Tos:       []byte{tos},
 				Sent:      now,
@@ -111,7 +112,7 @@ func (p *Port) send() {
 				//			   Likely based on the return from Marshal.
 				Padding: padding[:],
 			}
-			packedData, err := data.Marshal()
+			packedData, err := proto.Marshal(data)
 			HandleError(err)
 			// Send the probe
 			_, err = p.conn.WriteToUDP(packedData, addr)
@@ -182,7 +183,7 @@ func (p *Port) recv() {
 			}
 			data := dataBuf[0:dataLen]
 			udpData := &pb.Probe{}
-			err = udpData.Unmarshal(data)
+			err = proto.Unmarshal(data, udpData)
 			HandleMinorError(err)
 			id := string(udpData.Signature[:])
 			// TODO(dmar): Should be doing something about this error
@@ -256,12 +257,15 @@ func cleanup(port *Port) {
 // and caching mechanisms.
 func NewPort(conn *net.UDPConn, tosend chan *net.UDPAddr, stop chan bool,
 	cbc chan *Probe, cTimeout time.Duration, cCleanRate time.Duration,
-	readTimeout time.Duration) *Port {
+	readTimeout time.Duration,
+) *Port {
 	// Create the cache
 	cache := gocache.New(cTimeout, cCleanRate)
 	// Create the port
-	port := Port{tosend: tosend, conn: conn, cache: cache,
-		stop: stop, cbc: cbc, readTimeout: readTimeout}
+	port := Port{
+		tosend: tosend, conn: conn, cache: cache,
+		stop: stop, cbc: cbc, readTimeout: readTimeout,
+	}
 	// Used for wrapping the callback channel
 	port.cache.OnEvicted(port.done)
 	// Ensure that when the port is stopped, we cleanup.
@@ -272,7 +276,8 @@ func NewPort(conn *net.UDPConn, tosend chan *net.UDPAddr, stop chan bool,
 
 // NewDefault creates a new Port using default settings.
 func NewDefault(tosend chan *net.UDPAddr, stop chan bool,
-	cbc chan *Probe) *Port {
+	cbc chan *Probe,
+) *Port {
 	// Create a default UDPConn
 	udpAddr, err := net.ResolveUDPAddr("udp", DefaultAddrStr)
 	HandleError(err)

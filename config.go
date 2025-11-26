@@ -14,7 +14,7 @@ summarization:
     handlers:   2
 
 api:
-    bind:   0.0.0.0:5000
+    bind:   0.0.0.0:5200
 
 ports:
     default:
