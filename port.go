@@ -2,6 +2,7 @@
 package llama
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net"
@@ -9,17 +10,18 @@ import (
 	"strings"
 	"time"
 
-	gocache "github.com/patrickmn/go-cache"
-
+	"github.com/jellydator/ttlcache/v3"
 	pb "github.com/nsw3550/llama/proto"
 	"google.golang.org/protobuf/proto"
 )
+
+
 
 // Port represents a socket and its associated caching, inputs, and outputs.
 type Port struct {
 	tosend      chan *net.UDPAddr // A channel for receiving targets
 	conn        *net.UDPConn      // The socket on which to send/receive
-	cache       *gocache.Cache    // To handle temp storage of probes and timeout
+	cache       *ttlcache.Cache[string, *Probe]
 	stop        chan bool         // A signal to stop processing
 	cbc         chan *Probe       // Callback channel for sending expired Probes
 	readTimeout time.Duration     // How long to wait for reads
@@ -99,7 +101,7 @@ func (p *Port) send() {
 			// Add the probe to cache
 			// TODO(dmar): Might want to make this async in the future to avoid
 			//             making `now` more stale as things are going on.
-			p.cache.SetDefault(key, &probe)
+			p.cache.Set(key, &probe, ttlcache.DefaultTTL)
 			signature := IDToBytes(key)
 			var padding [1000]byte
 			data := &pb.Probe{
@@ -141,17 +143,14 @@ func (p *Port) recv() {
 			log.Println("Stopping Port.recv for:", p.conn.LocalAddr())
 			// Don't process expirations anymore
 			// This prevents outstanding probes from reporting as loss
-			// NOTE(dmar): Setting this to an empty function instead of nil, as
-			//   as the underlying library has a race condition, which can result
-			//   in a nil pointer refernce (it calls nil like a function).
-			p.cache.OnEvicted(func(s string, i interface{}) {})
+			p.cache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[string, *Probe]) {})
 			return // Stop receiving
 		default:
 			// This is a specific point in time, so it needs to be refreshed
 			timeout := time.Now().Add(p.readTimeout)
 			err := p.conn.SetReadDeadline(timeout)
 			HandleError(err)
-			// TODO(dmar):
+			// TODO(dmar): 
 			// This is very similar to `reflector.Receive` except for timeout
 			// handling. Should consolidate these at some point in UDP.
 			// Ignoring `oobLen` and `flags`for now
@@ -187,8 +186,8 @@ func (p *Port) recv() {
 			HandleMinorError(err)
 			id := string(udpData.Signature[:])
 			// TODO(dmar): Should be doing something about this error
-			cValue, found := p.cache.Get(id)
-			if !found {
+			item := p.cache.Get(id)
+			if item == nil || item.IsExpired() {
 				// This means it expired already or doesn't exist
 				// so there's nothing to do.
 				// TODO(dmar): Log/stat on occurrences of this
@@ -196,14 +195,14 @@ func (p *Port) recv() {
 			}
 			// TODO(dmar): Make wish to make a `ProbeCache` that does this
 			//             automatically under the hood.
-			probe, err := IfaceToProbe(cValue)
+			probe, err := IfaceToProbe(item.Value())
 			HandleMinorError(err)
 			// TODO(dmar): Update this to be more clean when moving to protobuf
 			probe.CRcvd = NowUint64()
 			// Error would be if the key didn't exist, meaning it expired
 			// since the Get above. Rare but possible. Acceptable for now.
 			// TODO(dmar): Log/stat on occurrences of this
-			_ = p.cache.Replace(id, probe, ExpireNow)
+			p.cache.Set(id, probe, ExpireNow)
 			// TODO(dmar): Log rate of `packets_received`
 		}
 	}
@@ -214,10 +213,8 @@ func (p *Port) recv() {
 //
 // This basically just exists to the do the type conversion and pass to the
 // channel.
-func (p *Port) done(key string, value interface{}) {
-	probe, err := IfaceToProbe(value)
-	HandleMinorError(err)
-	p.cbc <- probe
+func (p *Port) done(ctx context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[string, *Probe]) {
+	p.cbc <- item.Value()
 }
 
 // Probe represents a single UDP probe that was sent from, and (hopefully)
@@ -260,14 +257,17 @@ func NewPort(conn *net.UDPConn, tosend chan *net.UDPAddr, stop chan bool,
 	readTimeout time.Duration,
 ) *Port {
 	// Create the cache
-	cache := gocache.New(cTimeout, cCleanRate)
+	cache := ttlcache.New[string, *Probe](
+		ttlcache.WithTTL[string, *Probe](cTimeout),
+	)
 	// Create the port
 	port := Port{
 		tosend: tosend, conn: conn, cache: cache,
 		stop: stop, cbc: cbc, readTimeout: readTimeout,
 	}
 	// Used for wrapping the callback channel
-	port.cache.OnEvicted(port.done)
+	port.cache.OnEviction(port.done)
+	go cache.Start()
 	// Ensure that when the port is stopped, we cleanup.
 	// This happens on GC, so it may be delayed for a bit.
 	runtime.SetFinalizer(&port, cleanup)
@@ -310,3 +310,4 @@ func IfaceToProbe(iface interface{}) (*Probe, error) {
 		return probe, errors.New("Object provided is not a Probe")
 	}
 }
+
