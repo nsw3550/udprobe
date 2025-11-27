@@ -6,15 +6,18 @@ github.com/google/uuid
 github.com/influxdata/influxdb1-client/models
 github.com/influxdata/influxdb1-client/pkg/escape
 github.com/influxdata/influxdb1-client/v2
+# github.com/jellydator/ttlcache/v3 v3.4.0
+## explicit; go 1.23.0
+github.com/jellydator/ttlcache/v3
 # github.com/kr/pretty v0.1.0
 ## explicit
 github.com/kr/pretty
-# github.com/kr/text v0.1.0
+# github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/patrickmn/go-cache v2.1.0+incompatible
-## explicit
-github.com/patrickmn/go-cache
+# golang.org/x/sync v0.15.0
+## explicit; go 1.23.0
+golang.org/x/sync/singleflight
 # golang.org/x/sys v0.38.0
 ## explicit; go 1.24.0
 golang.org/x/sys/unix
