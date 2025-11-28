@@ -30,7 +30,7 @@ func (api *API) PromHandler() http.Handler {
 		log.Println("Found", len(summaries), "data points")
 		// Convert the summaries to Prometheus metrics
 		api.mutex.RLock()
-		// TODO(nwinemiller) - Add Logic Here
+		EmitMetricsFromSummaries(summaries, api.ts)
 		api.mutex.RUnlock()
 		// Unlock the cache
 		api.summarizer.CMutex.RUnlock()
@@ -127,5 +127,6 @@ func NewAPI(s *Summarizer, t TagSet, addr string) *API {
 		Addr:    addr,
 		Handler: handler,
 	}
+	RegisterPrometheus() // Register the necessary variables with the Prometheus handler.
 	return &API{summarizer: s, ts: t, handler: handler, server: server}
 }
