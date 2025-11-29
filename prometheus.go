@@ -2,8 +2,10 @@ package llama
 
 import "github.com/prometheus/client_golang/prometheus"
 
+// Labels we want to include in our metrics. Update if we want to add extra tags / labels.
 var llamaLabels = []string{"src_ip", "dst_ip", "src_hostname", "dst_hostname"}
 
+// Packet Loss Percentage
 var llamaPacketLoss = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Name: "llama_packet_loss_percentage",
@@ -12,6 +14,7 @@ var llamaPacketLoss = prometheus.NewGaugeVec(
 	llamaLabels,
 )
 
+// Packets Sent
 var llamaPacketsSent = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Name: "llama_packets_sent",
@@ -20,6 +23,7 @@ var llamaPacketsSent = prometheus.NewGaugeVec(
 	llamaLabels,
 )
 
+// Packets Lost
 var llamaPacketsLost = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Name: "llama_packets_lost",
@@ -28,6 +32,7 @@ var llamaPacketsLost = prometheus.NewGaugeVec(
 	llamaLabels,
 )
 
+// RTT for packets sent / received
 var llamaRTT = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Name: "llama_rtt",
@@ -36,8 +41,34 @@ var llamaRTT = prometheus.NewGaugeVec(
 	llamaLabels,
 )
 
+// Interface for setting metrics. Should make it easier to test.
+type MetricSetter interface {
+	SetPacketLoss(labels map[string]string, value float64)
+	SetPacketsSent(labels map[string]string, value float64)
+	SetPacketsLost(labels map[string]string, value float64)
+	SetRTT(labels map[string]string, value float64)
+}
+
+type PrometheusMetricSetter struct{}
+
+func (p *PrometheusMetricSetter) SetPacketLoss(labels map[string]string, value float64) {
+	llamaPacketLoss.With(labels).Set(value)
+}
+
+func (p *PrometheusMetricSetter) SetPacketsSent(labels map[string]string, value float64) {
+	llamaPacketsSent.With(labels).Set(value)
+}
+
+func (p *PrometheusMetricSetter) SetPacketsLost(labels map[string]string, value float64) {
+	llamaPacketsLost.With(labels).Set(value)
+}
+
+func (p *PrometheusMetricSetter) SetRTT(labels map[string]string, value float64) {
+	llamaRTT.With(labels).Set(value)
+}
+
 // EmitMetricsFromSummaries updates the Prometheus metrics based on the summaries with the necessary tags
-func EmitMetricsFromSummaries(summaries []*Summary, t TagSet) {
+func EmitMetricsFromSummaries(summaries []*Summary, t TagSet, setter MetricSetter) {
 	for _, summary := range summaries {
 		tags := t[summary.Pd.DstIP.String()]
 		labels := prometheus.Labels{
@@ -46,11 +77,10 @@ func EmitMetricsFromSummaries(summaries []*Summary, t TagSet) {
 			"src_hostname": tags["src_hostname"],
 			"dst_hostname": tags["dst_hostname"],
 		}
-
-		llamaPacketLoss.With(labels).Set(summary.Loss)
-		llamaPacketsSent.With(labels).Set(float64(summary.Sent))
-		llamaPacketsLost.With(labels).Set(float64(summary.Lost))
-		llamaRTT.With(labels).Set(summary.RTTAvg)
+		setter.SetPacketLoss(labels, summary.Loss)
+		setter.SetPacketsSent(labels, float64(summary.Sent))
+		setter.SetPacketsLost(labels, float64(summary.Lost))
+		setter.SetRTT(labels, summary.RTTAvg)
 	}
 }
 

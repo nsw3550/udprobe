@@ -30,7 +30,8 @@ func (api *API) PromHandler() http.Handler {
 		log.Println("Found", len(summaries), "data points")
 		// Convert the summaries to Prometheus metrics
 		api.mutex.RLock()
-		EmitMetricsFromSummaries(summaries, api.ts)
+		p := &PrometheusMetricSetter{}
+		EmitMetricsFromSummaries(summaries, api.ts, p)
 		api.mutex.RUnlock()
 		// Unlock the cache
 		api.summarizer.CMutex.RUnlock()
