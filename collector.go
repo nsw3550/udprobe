@@ -69,7 +69,7 @@ func (c *Collector) loadConfigFromFlag() error {
 	if *configFile != "" {
 		return c.loadConfigFromPath(*configFile)
 	} else {
-		return fmt.Errorf("Config file not provided via flag")
+		return fmt.Errorf("config file not provided via flag")
 	}
 }
 

@@ -1,7 +1,24 @@
+// Copyright (c) 2025 Nathan Winemiller
+// Copyright (c) 2019 Dropbox, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// THIS FILE HAS BEEN MODIFIED from its original version.
+// Changes: TODO(nwinemiller) - List changes here
+
 package llama
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,32 +57,6 @@ func (api *API) PromHandler() http.Handler {
 		// This serve the actual Prometheus formatted output
 		promhttp.Handler().ServeHTTP(w, r)
 	})
-}
-
-// InfluxHandler handles requests for InfluxDB formatted summaries.
-func (api *API) InfluxHandler(rw http.ResponseWriter, request *http.Request) {
-	// Lock the existing summaries cache
-	api.summarizer.CMutex.RLock()
-	summaries := api.summarizer.Cache
-	log.Println("Found", len(summaries), "data points")
-	// Convert the summaries to influx datapoints
-	api.mutex.RLock()
-	ifdp := NewDataPointsFromSummaries(summaries, api.ts)
-	api.mutex.RUnlock()
-	// And unlock the cache
-	api.summarizer.CMutex.RUnlock()
-
-	// Convert to JSON
-	asJson, err := json.Marshal(ifdp)
-	if err != nil {
-		log.Println(err)
-		rw.WriteHeader(500)
-		return
-	}
-
-	// Send back the response
-	_, err = rw.Write(asJson)
-	HandleMinorError(err)
 }
 
 // StatusHandler acts as a back healthcheck and simply returns 200 OK.
@@ -116,7 +107,6 @@ func (api *API) RunForever() {
 // SetupHandlers attaches the handlers above to the http server mux.
 func (api *API) setupHandlers() {
 	api.handler.HandleFunc("/status", api.StatusHandler)
-	api.handler.HandleFunc("/influxdata", api.InfluxHandler)
 	api.handler.Handle("/metrics", api.PromHandler())
 }
 

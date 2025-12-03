@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"golang.org/x/sys/unix" // The successor to syscall
 	"net"
+
+	"golang.org/x/sys/unix" // The successor to syscall
 )
 
 type UdpData struct {
@@ -94,7 +95,7 @@ func UnpackUdpData(data []byte) (*UdpData, error) {
 		&unpackedData)
 	// If the data isn't properly formatted, skip it, return an error
 	if err != nil {
-		errMsg := errors.New("Invalid data received")
+		errMsg := errors.New("invalid data received")
 		return &unpackedData, errMsg
 	}
 	return &unpackedData, nil
