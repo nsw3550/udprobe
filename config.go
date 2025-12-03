@@ -213,7 +213,7 @@ func NewCollectorConfig(data []byte) (*CollectorConfig, error) {
 	cc := &CollectorConfig{}
 	err := yaml.Unmarshal(data, cc)
 	if err != nil {
-		return cc, fmt.Errorf("Failed to parse collector config: %s", err)
+		return cc, fmt.Errorf("failed to parse collector config: %s", err)
 	}
 	return cc, nil
 }
@@ -250,7 +250,7 @@ func NewLegacyCollectorConfig(data []byte) (*LegacyCollectorConfig, error) {
 	lcc := make(LegacyCollectorConfig)
 	err := yaml.Unmarshal(data, lcc)
 	if err != nil {
-		return &lcc, fmt.Errorf("Failed to parse legacy collector config: %s", err)
+		return &lcc, fmt.Errorf("failed to parse legacy collector config: %s", err)
 	}
 	return &lcc, nil
 }

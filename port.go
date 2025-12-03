@@ -15,17 +15,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-
-
 // Port represents a socket and its associated caching, inputs, and outputs.
 type Port struct {
 	tosend      chan *net.UDPAddr // A channel for receiving targets
 	conn        *net.UDPConn      // The socket on which to send/receive
 	cache       *ttlcache.Cache[string, *Probe]
-	stop        chan bool         // A signal to stop processing
-	cbc         chan *Probe       // Callback channel for sending expired Probes
-	readTimeout time.Duration     // How long to wait for reads
-	basePD      *PathDist         // A partially filled PathDist based on conn
+	stop        chan bool     // A signal to stop processing
+	cbc         chan *Probe   // Callback channel for sending expired Probes
+	readTimeout time.Duration // How long to wait for reads
+	basePD      *PathDist     // A partially filled PathDist based on conn
 }
 
 // srcPD creates a PathDist based on the known socket details for the port.
@@ -150,7 +148,7 @@ func (p *Port) recv() {
 			timeout := time.Now().Add(p.readTimeout)
 			err := p.conn.SetReadDeadline(timeout)
 			HandleError(err)
-			// TODO(dmar): 
+			// TODO(dmar):
 			// This is very similar to `reflector.Receive` except for timeout
 			// handling. Should consolidate these at some point in UDP.
 			// Ignoring `oobLen` and `flags`for now
@@ -307,7 +305,6 @@ func IfaceToProbe(iface interface{}) (*Probe, error) {
 	if ok {
 		return probe, nil
 	} else {
-		return probe, errors.New("Object provided is not a Probe")
+		return probe, errors.New("object provided is not a Probe")
 	}
 }
-
