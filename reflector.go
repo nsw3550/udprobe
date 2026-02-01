@@ -31,7 +31,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		delay := reservation.Delay()
 		if delay > 0 {
 			// We hit the rate limit, so log it
-			// TODO(dmar): Log rate of `throttled`
+			// TODO(nwinemiller): Log rate of `throttled`
 			time.Sleep(delay)
 		}
 
@@ -47,7 +47,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		if err != nil {
 			// Else, don't reflect bad data
 			log.Println("Error hit when unmarshalling probe")
-			// TODO(dmar): Log rate of `packets_bad_data`
+			// TODO(nwinemiller): Log rate of `packets_bad_data`
 			HandleMinorError(err)
 			continue
 		}
@@ -61,7 +61,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 
 		// Send the data back to sender
 		Send(data, conn, addr)
-		// TODO(dmar): Log rate of `packets_processed`
+		// TODO(nwinemiller): Log rate of `packets_processed`
 	}
 }
 

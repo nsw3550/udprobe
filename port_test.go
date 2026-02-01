@@ -22,11 +22,11 @@ var exampleProbeChan = make(chan *Probe)
    Port tests
 */
 func TestSrcPD(t *testing.T) {
-	// TODO(dmar): This will need some mocking in order to be build safe.
+	// TODO(nwinemiller): This will need some mocking in order to be build safe.
 }
 
 func TestPd(t *testing.T) {
-	// TODO(dmar): This will need some mocking in order to be build safe.
+	// TODO(nwinemiller): This will need some mocking in order to be build safe.
 }
 
 func TestTos(t *testing.T) {
@@ -34,11 +34,11 @@ func TestTos(t *testing.T) {
 }
 
 func TestSend(t *testing.T) {
-	// TODO(dmar): This will need some mocking in order to be build safe.
+	// TODO(nwinemiller): This will need some mocking in order to be build safe.
 }
 
 func TestRecv(t *testing.T) {
-	// TODO(dmar): This will need some mocking in order to be build safe.
+	// TODO(nwinemiller): This will need some mocking in order to be build safe.
 }
 
 func TestDone(t *testing.T) {

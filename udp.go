@@ -34,7 +34,7 @@ func LocalUDPAddr(conn *net.UDPConn) (*net.UDPAddr, string, error) {
 
 // SetTos will set the IP_TOS value for the unix socket for the provided conn.
 //
-// TODO(dmar): May want to have these return the err, or actually handle.
+// TODO(nwinemiller): May want to have these return the err, or actually handle.
 // Could dedup there a bit. Maybe.
 func SetTos(conn *net.UDPConn, tos byte) {
 	file, err := conn.File()
@@ -71,7 +71,7 @@ func EnableTimestamps(conn *net.UDPConn) {
 	HandleError(err)
 }
 
-// TODO(dmar): These should be functions attached to `UdpData`
+// TODO(nwinemiller): These should be functions attached to `UdpData`
 // PackUdpData takes a UdpData instances and converts it to a byte array.
 func PackUdpData(data *UdpData) ([]byte, error) {
 	byteBuffer := bytes.Buffer{}
@@ -85,7 +85,7 @@ func PackUdpData(data *UdpData) ([]byte, error) {
 // error if the data was not compatible.
 func UnpackUdpData(data []byte) (*UdpData, error) {
 	/*
-	   TODO(dmar): Using protocol buffers would make this easier and more
+	   TODO(nwinemiller): Using protocol buffers would make this easier and more
 	   language agnostic in the future.
 	*/
 	// Cast it into the data struct

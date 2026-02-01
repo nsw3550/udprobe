@@ -9,7 +9,7 @@ import (
 var exampleCallbackChan = make(chan *Probe)
 
 func TestTestRunnerRun(t *testing.T) {
-	// TODO(dmar): A more intensive test of this requires more mocking.
+	// TODO(nwinemiller): A more intensive test of this requires more mocking.
 	//     For now, it's at least touched in `TestTestRunnerStop`.
 }
 

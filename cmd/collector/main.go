@@ -30,7 +30,7 @@ func main() {
 		switch sig {
 		case unix.SIGINT, unix.SIGTERM:
 			log.Printf("Received %s, shutting down", sig)
-			// TODO(dmar): Add smarter handling here for around stopping things
+			// TODO(nwinemiller): Add smarter handling here for around stopping things
 			return
 		case unix.SIGHUP:
 			log.Printf("Received %s, reloading and reconfiguring", sig)

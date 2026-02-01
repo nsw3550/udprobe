@@ -46,7 +46,7 @@ func (p *Port) srcPD() *PathDist {
 // pd will provide a completed PathDist based on the associated p.conn and
 // the provided net.UDPAddr.
 func (p *Port) pd(dst *net.UDPAddr) *PathDist {
-	// TODO(dmar): Since many of these are going to be repeats, keep these
+	// TODO(nwinemiller): Since many of these are going to be repeats, keep these
 	//      around for reuse. That also allows memory pointers to be used
 	//      for equality/summarization later.
 	// BUG: If generated from ResolveUDPAddr in the form `:<port>` this will
@@ -97,7 +97,7 @@ func (p *Port) send() {
 				Tos:   tos,
 			}
 			// Add the probe to cache
-			// TODO(dmar): Might want to make this async in the future to avoid
+			// TODO(nwinemiller): Might want to make this async in the future to avoid
 			//             making `now` more stale as things are going on.
 			p.cache.Set(key, &probe, ttlcache.DefaultTTL)
 			signature := IDToBytes(key)
@@ -106,7 +106,7 @@ func (p *Port) send() {
 				Signature: signature[:],
 				Tos:       []byte{tos},
 				Sent:      now,
-				// TODO(dmar): This should be customizable, and relative to
+				// TODO(nwinemiller): This should be customizable, and relative to
 				//			   to the rest of the probe. This should really
 				//             be used to fill to a maximum size.
 				//			   Likely based on the return from Marshal.
@@ -117,7 +117,7 @@ func (p *Port) send() {
 			// Send the probe
 			_, err = p.conn.WriteToUDP(packedData, addr)
 			HandleError(err)
-			// TODO(dmar): Log rate of `packets_sent`
+			// TODO(nwinemiller): Log rate of `packets_sent`
 		}
 	}
 }
@@ -148,7 +148,7 @@ func (p *Port) recv() {
 			timeout := time.Now().Add(p.readTimeout)
 			err := p.conn.SetReadDeadline(timeout)
 			HandleError(err)
-			// TODO(dmar):
+			// TODO(nwinemiller):
 			// This is very similar to `reflector.Receive` except for timeout
 			// handling. Should consolidate these at some point in UDP.
 			// Ignoring `oobLen` and `flags`for now
@@ -183,25 +183,25 @@ func (p *Port) recv() {
 			err = proto.Unmarshal(data, udpData)
 			HandleMinorError(err)
 			id := string(udpData.Signature[:])
-			// TODO(dmar): Should be doing something about this error
+			// TODO(nwinemiller): Should be doing something about this error
 			item := p.cache.Get(id)
 			if item == nil || item.IsExpired() {
 				// This means it expired already or doesn't exist
 				// so there's nothing to do.
-				// TODO(dmar): Log/stat on occurrences of this
+				// TODO(nwinemiller): Log/stat on occurrences of this
 				continue
 			}
-			// TODO(dmar): Make wish to make a `ProbeCache` that does this
+			// TODO(nwinemiller): Make wish to make a `ProbeCache` that does this
 			//             automatically under the hood.
 			probe, err := IfaceToProbe(item.Value())
 			HandleMinorError(err)
-			// TODO(dmar): Update this to be more clean when moving to protobuf
+			// TODO(nwinemiller): Update this to be more clean when moving to protobuf
 			probe.CRcvd = NowUint64()
 			// Error would be if the key didn't exist, meaning it expired
 			// since the Get above. Rare but possible. Acceptable for now.
-			// TODO(dmar): Log/stat on occurrences of this
+			// TODO(nwinemiller): Log/stat on occurrences of this
 			p.cache.Set(id, probe, ExpireNow)
-			// TODO(dmar): Log rate of `packets_received`
+			// TODO(nwinemiller): Log rate of `packets_received`
 		}
 	}
 }
@@ -285,7 +285,7 @@ func NewDefault(tosend chan *net.UDPAddr, stop chan bool,
 	err = udpConn.SetReadBuffer(DefaultRcvBuff)
 	HandleError(err)
 	SetTos(udpConn, DefaultTos)
-	// TODO(dmar): Update to allow no args, and setting later if desired.
+	// TODO(nwinemiller): Update to allow no args, and setting later if desired.
 	port := NewPort(
 		udpConn,
 		tosend,

@@ -70,7 +70,7 @@ func TestTargetSetTagSet(t *testing.T) {
 	if !ok {
 		t.Error("Parsed value was not populated")
 	}
-	// TODO(dmar): Add some deeper testing here
+	// TODO(nwinemiller): Add some deeper testing here
 }
 
 func TestTargetSetIntoTagSet(t *testing.T) {
@@ -90,7 +90,7 @@ func TestTargetSetIntoTagSet(t *testing.T) {
 func TestTargetSetListTarget(t *testing.T) {
 	expected := []string{"1.2.3.4:1234", "127.0.0.1:32000"}
 	result := exampleTargetSet.ListTargets()
-	// TODO(dmar): Do deeper evaluation here.
+	// TODO(nwinemiller): Do deeper evaluation here.
 	if len(expected) != len(result) {
 		t.Error("Expected:", expected, "but got:", result)
 	}

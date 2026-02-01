@@ -72,7 +72,7 @@ func HandleMinorError(err error) {
 }
 
 // HandleError receives an error, then logs and exits if not nil.
-// TODO(dmar): Create additional simple handlers for non-fatal issues
+// TODO(nwinemiller): Create additional simple handlers for non-fatal issues
 func HandleFatalError(err error) {
 	if err != nil {
 		// Could have this logging to Sentry
@@ -83,7 +83,7 @@ func HandleFatalError(err error) {
 
 // SetRecvBufferSize sets the size of the receive buffer for the conn to the
 // provided size in bytes.
-// TODO(dmar): Validate and replace this with a simple call to conn.SetReadBuffer
+// TODO(nwinemiller): Validate and replace this with a simple call to conn.SetReadBuffer
 func SetRecvBufferSize(conn *net.UDPConn, size int) {
 	file, err := conn.File()
 	defer FileCloseHandler(file)

@@ -51,22 +51,22 @@ func (tr *TestRunner) cycleTargets() {
 	// Acquire the lock for `tr.targets`
 	tr.mutex.RLock()
 	defer tr.mutex.RUnlock()
-	// TODO(dmar): Track how long it takes for cycles to complete.
+	// TODO(nwinemiller): Track how long it takes for cycles to complete.
 	//      The tough part here is that there can be multiple TestRunners
 	//      with a varying number of targets, so they aren't all treated
 	//      equally.
 	for _, target := range tr.targets {
-		// TODO(dmar): It's probably cleaner to just provide access to this
+		// TODO(nwinemiller): It's probably cleaner to just provide access to this
 		//      on `tr.pg` and call that, as opposed to keeping track of
 		//      the channel itself.
-		// TODO(dmar): It's possible for this to block if things lower
+		// TODO(nwinemiller): It's possible for this to block if things lower
 		//      down can't keep up. Leaving it that way for now, however
 		//      it may be desirable to allow some kind of "out" in the
 		//      future.
 		tr.tosend <- target
 	}
 	// Cycle is complete here.
-	// TODO(dmar): This really is just referring to the ability to pass
+	// TODO(nwinemiller): This really is just referring to the ability to pass
 	//      off the targets. Doesn't actually mean everything below
 	//      finished. But it's at least a reasonable signal of the ability
 	//      to send.
@@ -146,7 +146,7 @@ func (tr *TestRunner) AddNewPort(portStr string, tos byte,
 	cTimeout time.Duration,
 	cCleanRate time.Duration,
 	readTimeout time.Duration) {
-	// TODO(dmar): This must not be running already. Add enforcement.
+	// TODO(nwinemiller): This must not be running already. Add enforcement.
 	tr.pg.AddNew(portStr, tos, cTimeout, cCleanRate, readTimeout)
 }
 
@@ -156,7 +156,7 @@ func (tr *TestRunner) AddNewPort(portStr string, tos byte,
 // `rl` is a rate limiter which is used to throttle the number of cycles that
 // may be completed per second.
 func NewTestRunner(cbc chan *Probe, rl *rate.Limiter) *TestRunner {
-	// TODO(dmar): What about providing this on creation? Perhaps an option at
+	// TODO(nwinemiller): What about providing this on creation? Perhaps an option at
 	//      some point, but just use Set for now.
 	//targets := make([]*net.UDPAddr)
 	var targets []*net.UDPAddr

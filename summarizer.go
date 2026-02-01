@@ -39,7 +39,7 @@ type Summarizer struct {
 // When results are summarized, they are removed and won't be summarized again.
 func (s *Summarizer) Run() {
 	go s.waitToSummarize()
-	// TODO(dmar): Need to make the number of `store` goroutines customizable.
+	// TODO(nwinemiller): Need to make the number of `store` goroutines customizable.
 	//      These need to be able to keep up with the ResultHandler(s) and
 	//      however many probes are coming from all the ports/testrunners.
 	//      This was proving to be a bottleneck before.
@@ -80,7 +80,7 @@ func (s *Summarizer) waitToSummarize() {
 // summarize pull out the current results, resetting the Summarizer's results,
 // and performing summarizations of all the extracted results.
 func (s *Summarizer) summarize() {
-	// TODO(dmar): May want to time this in the future, and keep track of it
+	// TODO(nwinemiller): May want to time this in the future, and keep track of it
 	s.mutex.Lock()
 	// Extract the results and reset the map
 	results := s.results
@@ -106,7 +106,7 @@ func (s *Summarizer) summarize() {
 // Any desired summarization functions should be called from here, and operate
 // on the summary and results.
 func (s *Summarizer) summarizeSet(results []*Result) *Summary {
-	// TODO(dmar): Fix this bit in the future based on improved handling of
+	// TODO(nwinemiller): Fix this bit in the future based on improved handling of
 	//             PathDist for keying. For now, since all of them should have
 	//             the same Pd, just grab the first one.
 	// This would fail if the results were empty, but then there shouldn't
@@ -138,7 +138,7 @@ func (s *Summarizer) store() {
 
 // addResult adds a single result to the Summarizer's set of results.
 func (s *Summarizer) addResult(result *Result) {
-	// TODO(dmar): Since the Pd is a pointer, and isn't shared between Probes
+	// TODO(nwinemiller): Since the Pd is a pointer, and isn't shared between Probes
 	//      or results, it's different for each, even if they should be the
 	//      same. In the future, it may be better to handle that at the Port
 	//      level, so that pointers are saved and reused.
@@ -151,7 +151,7 @@ func (s *Summarizer) addResult(result *Result) {
 	//      And then populate the Pd pointer based on the value in one of the
 	//      Result structs.
 	// For now, just keying this on the src/dst IPs to avoid extra points.
-	// TODO(dmar): In the future, based on how the above todo turns out,
+	// TODO(nwinemiller): In the future, based on how the above todo turns out,
 	//      perhaps customize what fields are used/ignored.
 	key := fmt.Sprintf("src_%v->dst_%v", result.Pd.SrcIP, result.Pd.DstIP)
 	s.mutex.Lock()
@@ -190,12 +190,12 @@ func CalcRTT(results []*Result, summary *Summary) {
 	// Up to here, values for RTT are in nanoseconds. However, converting to
 	// milliseconds here for backward compatibility and human readability.
 	//
-	// TODO(dmar): Stop converting to ms and just leave as ns. This will need
+	// TODO(nwinemiller): Stop converting to ms and just leave as ns. This will need
 	//             some type conversions in the structs and graph updates, but
 	//             keeps things in the form they are originally determined in.
 	//             Plus it just gets us more precision.
 	//
-	// TODO(dmar): Similar to before, these are zero if everything was lost.
+	// TODO(nwinemiller): Similar to before, these are zero if everything was lost.
 	//             See CalcLoss for the issue regarding NaN. So need to
 	//             determine how best to handle this.
 	// If there are no results, abort
@@ -215,7 +215,7 @@ func CalcRTT(results []*Result, summary *Summary) {
 
 	// If no tests actually completed, just end here
 	if len(values) == 0 {
-		// TODO(dmar): This will leave them all as the zero values, which is
+		// TODO(nwinemiller): This will leave them all as the zero values, which is
 		//      0.0 for now. See other comments about this behavior.
 		return
 	}
@@ -270,7 +270,7 @@ func CalcLoss(summary *Summary) {
 		// Doing zero for now, as there's technically no loss.
 		summary.Loss = 0
 	}
-	// TODO(dmar): Following the existing pattern by converting this to
+	// TODO(nwinemiller): Following the existing pattern by converting this to
 	//      percent out of 100 instead of 1. It's just extra math, but not
 	//      impactful enough to really justify dealing with.
 	summary.Loss = (float64(summary.Lost) / float64(summary.Sent)) * 100.0

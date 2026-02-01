@@ -85,7 +85,7 @@ type TestsConfig []TestConfig
 // TargetConfig describes a single target for testing, including tags that
 // are applied to the resulting summaries.
 //
-// TODO(dmar): Restructure this to be more Dropbox specific, and reduce the
+// TODO(nwinemiller): Restructure this to be more Dropbox specific, and reduce the
 //
 //	data being included in this config. Most of this can come from a base,
 //	and then be populated by MDB queries.
@@ -164,7 +164,7 @@ func (tc TargetsConfig) TagSet() TagSet {
 // IntoTagSet is a wrapper about the same function for each contained TargetSet
 // and merges them into an existing ts.
 func (tc TargetsConfig) IntoTagSet(ts TagSet) {
-	// TODO(dmar): Right now, this doesn't distinguish by TargetSet, so if a
+	// TODO(nwinemiller): Right now, this doesn't distinguish by TargetSet, so if a
 	//      target appears in multiple places, only the last entry will be
 	//      used.
 	for _, targetSet := range tc {

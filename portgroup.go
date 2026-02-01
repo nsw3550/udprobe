@@ -18,7 +18,7 @@ type PortGroup struct {
 // Add will add a Port and channel to the PortGroup.
 //
 // This must NOT be used after running, as it is currently not threadsafe.
-// TODO(dmar): In the future, if doing this is desired, add a mutex and
+// TODO(nwinemiller): In the future, if doing this is desired, add a mutex and
 //      appropriate locking.
 func (pg *PortGroup) Add(p *Port, c chan *net.UDPAddr) {
 	pg.ports[p] = c
@@ -42,14 +42,14 @@ func (pg *PortGroup) AddNew(portStr string, tos byte, cTimeout time.Duration,
 	// Update the ToS value for the socket
 	SetTos(conn, tos)
 	// Tell the socket to keep timestamps
-	// TODO(dmar): Not using this yet, but enabling anyways
+	// TODO(nwinemiller): Not using this yet, but enabling anyways
 	EnableTimestamps(conn)
 	// Increase the buffer size, since the default doesn't scale
-	// TODO(dmar): This should be configurable higher up, as well want to be
+	// TODO(nwinemiller): This should be configurable higher up, as well want to be
 	//             able to tweak this behavior more easily in the config.
 	err = conn.SetReadBuffer(DefaultRcvBuff)
 	HandleError(err)
-	// TODO(dmar): May want to set a global/default buffer size for use here
+	// TODO(nwinemiller): May want to set a global/default buffer size for use here
 	input := make(chan *net.UDPAddr, 10)
 	// Create the port
 	p := NewPort(
@@ -69,7 +69,7 @@ func (pg *PortGroup) AddNew(portStr string, tos byte, cTimeout time.Duration,
 // Del removes a Port from the PortGroup.
 //
 // This must NOT be done after running.
-// TODO(dmar): If this is desirable, similar to Add, a mutex and locking
+// TODO(nwinemiller): If this is desirable, similar to Add, a mutex and locking
 //      will be needed and adds overhead.
 func (pg *PortGroup) Del(p *Port) {
 	delete(pg.ports, p)
@@ -78,11 +78,11 @@ func (pg *PortGroup) Del(p *Port) {
 // Run will start sending/receiving on all Ports in the PortGroup, and then
 // then loop muxing inbound UDPAddrs to all ports until stopped.
 //
-// TODO(dmar): Add something here to prevent ports from being added after
+// TODO(nwinemiller): Add something here to prevent ports from being added after
 //      it has started running. Otherwise, a mutex is needed to
 //      to sync things, though that may be a fine option as long
 //      as there aren't too many goroutines or ports.
-// TODO(dmar): Allow an arg for starting multiple goroutines? Otherwise
+// TODO(nwinemiller): Allow an arg for starting multiple goroutines? Otherwise
 //      leave that to higher level stuff.
 func (pg *PortGroup) Run() {
 	// Start all of the ports
@@ -118,7 +118,7 @@ func (pg *PortGroup) run() {
 // here, similar to Add and Del.
 func (pg *PortGroup) mux(addr *net.UDPAddr) {
 	for _, c := range pg.ports {
-		// TODO(dmar): Update this with a select and default in the future
+		// TODO(nwinemiller): Update this with a select and default in the future
 		//     if we want to track cases where something breaks here.
 		//     Tried it before, but apparently hit some weird issues.
 		c <- addr

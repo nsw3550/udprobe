@@ -97,9 +97,9 @@ func (api *API) MergeUpdateTagSet(t TagSet) {
 // Calling this will block until stopped/crashed.
 func (api *API) RunForever() {
 	// Setup the handlers
-	// TODO(dmar): It might be better to move this elsewhere?
+	// TODO(nwinemiller): It might be better to move this elsewhere?
 	api.setupHandlers()
-	// TODO(dmar): Better handling around if this dies or gets shutdown. Though
+	// TODO(nwinemiller): Better handling around if this dies or gets shutdown. Though
 	//      if it dies, the collector is kinda useless anyways.
 	log.Fatal(api.server.ListenAndServe())
 }
@@ -112,7 +112,7 @@ func (api *API) setupHandlers() {
 
 // New returns an initialized API struct.
 func NewAPI(s *Summarizer, t TagSet, addr string) *API {
-	// TODO(dmar): In the future, make these options that can be provided.
+	// TODO(nwinemiller): In the future, make these options that can be provided.
 	handler := http.NewServeMux()
 	server := &http.Server{
 		Addr:    addr,

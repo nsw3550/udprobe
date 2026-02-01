@@ -14,7 +14,7 @@ import (
 
 const DEFAULT_CHANNEL_SIZE int64 = 100 // Default size used for buffered channels.
 
-// TODO(dmar): This really shouldn't be in here, and should be provided from the
+// TODO(nwinemiller): This really shouldn't be in here, and should be provided from the
 //
 //	cmd tools or higher up.
 //
@@ -30,10 +30,10 @@ type Collector struct {
 	cfg *CollectorConfig
 	ts  TagSet
 	api *API
-	// TODO(dmar): Might want these to be named, for clarity in logging
+	// TODO(nwinemiller): Might want these to be named, for clarity in logging
 	//      and doing any restarting.
 	runners []*TestRunner
-	// TODO(dmar): Keeping cbc around here feels dirty and unneeded, as it's
+	// TODO(nwinemiller): Keeping cbc around here feels dirty and unneeded, as it's
 	//      only temporarily needed during setup. But it does the trick for
 	//      now. Perhaps find a cleaner way in the future.
 	cbc chan *Probe
@@ -146,7 +146,7 @@ func (c *Collector) SetupTagSet() {
 func (c *Collector) SetupTestRunner(test TestConfig) {
 	rl := c.createRateLimiter(test.RateLimit)
 	runner := NewTestRunner(c.cbc, rl)
-	// TODO(dmar): This could hit a runtime error if the TargetSet name
+	// TODO(nwinemiller): This could hit a runtime error if the TargetSet name
 	// doesn't exist. So might want to break this into two parts.
 	targets, err := c.cfg.Targets[test.Targets].ListResolvedTargets()
 	if err != nil {
@@ -256,14 +256,14 @@ func (c *Collector) Reload() {
 	c.SetupTestRunners()
 	// The summarizer and API should be untouched though
 	// We just need to start all the new test runners
-	// TODO(dmar): This is redundant with part of Run() and
+	// TODO(nwinemiller): This is redundant with part of Run() and
 	//             could be reorganized.
 	log.Println("Starting new test runners")
 	for _, runner := range c.runners {
 		runner.Run()
 	}
 	// Update the TagSet on the API to reflect the new config
-	// TODO(dmar): This merges the new TagSet with the existing one to address the case
+	// TODO(nwinemiller): This merges the new TagSet with the existing one to address the case
 	//   where outstanding test results are for a host that is no longer in the config.
 	//   So if we get rid of the existing tag info, when that one gets to the API,
 	//   it'll have no tags. So this continues updating the existing tagset with
