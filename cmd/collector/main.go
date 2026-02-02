@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nsw3550/llama"
+	"github.com/nsw3550/udprobe"
 	"golang.org/x/sys/unix"
 )
 
@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	// Create the collector
-	collector := llama.Collector{}
+	collector := udprobe.Collector{}
 
 	// Perform setup
 	collector.Setup()

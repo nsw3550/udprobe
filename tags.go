@@ -4,7 +4,7 @@
 // Example:
 // Tags["1.2.3.4"]["dst_hostname"] = "localhost"
 // Tags["1.2.3.4"]["dst_cluster"] = "mycluster"
-package llama
+package udprobe
 
 // TODO(nwinemiller): This is cool and all, but as is, it just plays weird. You need
 //       to make it like a map, but that only does the outside. Try to do a

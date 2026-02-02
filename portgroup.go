@@ -1,6 +1,6 @@
 // portgroup defines PortGroup, which is used to multiplex UDPAddr structs to
 // multiple ports via parallel channels.
-package llama
+package udprobe
 
 import (
 	"log"

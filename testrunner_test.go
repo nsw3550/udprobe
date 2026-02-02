@@ -1,4 +1,4 @@
-package llama
+package udprobe
 
 import (
 	"golang.org/x/time/rate"

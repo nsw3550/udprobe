@@ -1,6 +1,6 @@
-// LLAMA Collector sends UDP probes to a set of target reflectors and provides
+// UDProbe Collector sends UDP probes to a set of target reflectors and provides
 // statistics about their latency and reachability via an API.
-package llama
+package udprobe
 
 import (
 	"flag"
@@ -19,10 +19,10 @@ const DEFAULT_CHANNEL_SIZE int64 = 100 // Default size used for buffered channel
 //	cmd tools or higher up.
 //
 // Flags
-var configFile = flag.String("llama.config", "", "Config file to load from")
+var configFile = flag.String("udprobe.config", "", "Config file to load from")
 
 // Temporary until this is provided in the config
-var dstPort = flag.Int64("llama.dst-port", 8100, "Port to send probes to. Only applies if legacy config provided.")
+var dstPort = flag.Int64("udprobe.dst-port", 8100, "Port to send probes to. Only applies if legacy config provided.")
 
 // Collector reads a YAML configuration, performs UDP probe tests against
 // targets, and provides summaries of the results via a JSON HTTP API.
@@ -54,7 +54,7 @@ func (c *Collector) LoadConfig() {
 		log.Fatal("Failed to load configuration:", err)
 		// If that wasn't provided, load the default
 	} else {
-		log.Println("No llama.config provided; loading default config")
+		log.Println("No udprobe.config provided; loading default config")
 		err := c.loadConfigFromDefault()
 		if err == nil {
 			return
@@ -64,7 +64,7 @@ func (c *Collector) LoadConfig() {
 }
 
 // loadConfigFromFlag attempts to parse and load the configuration file
-// provided by the `llama.config` CLI flag, returning an error if unsuccessful.
+// provided by the `udprobe.config` CLI flag, returning an error if unsuccessful.
 func (c *Collector) loadConfigFromFlag() error {
 	if *configFile != "" {
 		return c.loadConfigFromPath(*configFile)
