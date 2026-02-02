@@ -1,4 +1,4 @@
-package llama
+package udprobe
 
 import (
 	"fmt"
@@ -218,7 +218,7 @@ func NewCollectorConfig(data []byte) (*CollectorConfig, error) {
 	return cc, nil
 }
 
-// LegacyCollectorConfig is for backward compatibility with the existing LLAMA
+// LegacyCollectorConfig is for backward compatibility with the existing UDProbe
 // config and represents only a map of targets to tags.
 type LegacyCollectorConfig map[string]map[string]string
 

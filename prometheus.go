@@ -1,44 +1,52 @@
-package llama
+package udprobe
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"sync"
 
-// Labels we want to include in our metrics. Update if we want to add extra tags / labels.
-var llamaLabels = []string{"src_ip", "dst_ip", "src_hostname", "dst_hostname"}
-
-// Packet Loss Percentage
-var llamaPacketLoss = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "llama_packet_loss_percentage",
-		Help: "Packet loss percentage for a given measurement period.",
-	},
-	llamaLabels,
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Packets Sent
-var llamaPacketsSent = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "llama_packets_sent",
-		Help: "Number of packets sent for a given measurement period.",
-	},
-	llamaLabels,
-)
+var (
+	// Labels we want to include in our metrics. Update if we want to add extra tags / labels.
+	udprobeLabels = []string{"src_ip", "dst_ip", "src_hostname", "dst_hostname"}
 
-// Packets Lost
-var llamaPacketsLost = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "llama_packets_lost",
-		Help: "Number of packets lost for a given measurement period.",
-	},
-	llamaLabels,
-)
+	// Packet Loss Percentage
+	udprobePacketLoss = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "udprobe_packet_loss_percentage",
+			Help: "Packet loss percentage for a given measurement period.",
+		},
+		udprobeLabels,
+	)
 
-// RTT for packets sent / received
-var llamaRTT = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "llama_rtt",
-		Help: "RTT for packets sent during a given measurement period.",
-	},
-	llamaLabels,
+	// Packets Sent
+	udprobePacketsSent = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "udprobe_packets_sent",
+			Help: "Number of packets sent for a given measurement period.",
+		},
+		udprobeLabels,
+	)
+
+	// Packets Lost
+	udprobePacketsLost = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "udprobe_packets_lost",
+			Help: "Number of packets lost for a given measurement period.",
+		},
+		udprobeLabels,
+	)
+
+	// RTT for packets sent / received
+	udprobeRTT = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "udprobe_rtt",
+			Help: "RTT for packets sent during a given measurement period.",
+		},
+		udprobeLabels,
+	)
+
+	registerOnce sync.Once
 )
 
 // Interface for setting metrics. Should make it easier to test.
@@ -52,19 +60,19 @@ type MetricSetter interface {
 type PrometheusMetricSetter struct{}
 
 func (p *PrometheusMetricSetter) SetPacketLoss(labels map[string]string, value float64) {
-	llamaPacketLoss.With(labels).Set(value)
+	udprobePacketLoss.With(labels).Set(value)
 }
 
 func (p *PrometheusMetricSetter) SetPacketsSent(labels map[string]string, value float64) {
-	llamaPacketsSent.With(labels).Set(value)
+	udprobePacketsSent.With(labels).Set(value)
 }
 
 func (p *PrometheusMetricSetter) SetPacketsLost(labels map[string]string, value float64) {
-	llamaPacketsLost.With(labels).Set(value)
+	udprobePacketsLost.With(labels).Set(value)
 }
 
 func (p *PrometheusMetricSetter) SetRTT(labels map[string]string, value float64) {
-	llamaRTT.With(labels).Set(value)
+	udprobeRTT.With(labels).Set(value)
 }
 
 // EmitMetricsFromSummaries updates the Prometheus metrics based on the summaries with the necessary tags
@@ -85,5 +93,7 @@ func EmitMetricsFromSummaries(summaries []*Summary, t TagSet, setter MetricSette
 }
 
 func RegisterPrometheus() {
-	prometheus.MustRegister(llamaPacketLoss, llamaPacketsSent, llamaPacketsLost, llamaRTT)
+	registerOnce.Do(func() {
+		prometheus.MustRegister(udprobePacketLoss, udprobePacketsSent, udprobePacketsLost, udprobeRTT)
+	})
 }

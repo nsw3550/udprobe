@@ -1,4 +1,4 @@
-package llama
+package udprobe
 
 import (
 	"log"
@@ -6,7 +6,7 @@ import (
 	"time"
 	"unsafe"
 
-	pb "github.com/nsw3550/llama/proto"
+	pb "github.com/nsw3550/udprobe/proto"
 	"golang.org/x/sys/unix"
 	"golang.org/x/time/rate"
 	"google.golang.org/protobuf/proto"
@@ -38,7 +38,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		data, _, addr := Receive(dataBuf, oobBuf, conn)
 
 		// For this section, it might make sense to put in `Process` anyways.
-		// But for now, all we need is to make sure it's llama data
+		// But for now, all we need is to make sure it's udprobe data
 		// and get the ToS value.
 		pbProbe := &pb.Probe{}
 		err := proto.Unmarshal(data, pbProbe)

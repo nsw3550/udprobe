@@ -16,7 +16,7 @@
 // THIS FILE HAS BEEN MODIFIED from its original version.
 // Changes: TODO(nwinemiller) - List changes here
 
-package llama
+package udprobe
 
 import (
 	"fmt"

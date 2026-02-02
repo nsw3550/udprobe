@@ -1,4 +1,4 @@
-module github.com/nsw3550/llama
+module github.com/nsw3550/udprobe
 
 go 1.24.0
 

@@ -2,19 +2,19 @@
 > It has been modified to export Prometheus metrics instead of InfluxDB and includes
 > Docker deployment support.
 
-# LLAMA
+# UDProbe
 
-LLAMA (Loss and LAtency MAtrix) is a library for testing and measuring network loss and latency between distributed endpoints.
+UDProbe (mix of UDP and Probe) is a library for testing and measuring network loss and latency between distributed endpoints.
 
 It does this by sending UDP datagrams/probes from **collectors** to **reflectors** and measuring how long it takes for them to return, if they return at all. UDP is used to provide ECMP hashing over multiple paths (a win over ICMP) without the need for setup/teardown and per-packet granularity (a win over TCP).
 
 ## Why Is This Useful
 
-[Black box testing](https://en.wikipedia.org/wiki/Black-box_testing) is critical to the successful monitoring and operation of a network. While collection of metrics from network devices can provide greater detail regarding known issues, they don't always provide a complete picture and can provide an overwhelming number of metrics. Black box testing with LLAMA doesn't care how the network is structured, only if it's working. This data can be used for building KPIs, observing big-picture issues, and guiding investigations into issues with unknown causes by quantifying which flows are/aren't working.
+[Black box testing](https://en.wikipedia.org/wiki/Black-box_testing) is critical to the successful monitoring and operation of a network. While collection of metrics from network devices can provide greater detail regarding known issues, they don't always provide a complete picture and can provide an overwhelming number of metrics. Black box testing with UDProbe doesn't care how the network is structured, only if it's working. This data can be used for building KPIs, observing big-picture issues, and guiding investigations into issues with unknown causes by quantifying which flows are/aren't working.
 
 Network operators have found this useful on multiple occasions for gauging the impact of network issues on internal traffic, identifying the scope of impact, and locating issues for which they had no other metrics (internal hardware failures, circuit degradations, etc).
 
-**Even if you operate entirely in the cloud** LLAMA can help identify reachability and network health issues between and within regions/zones.
+**Even if you operate entirely in the cloud** UDProbe can help identify reachability and network health issues between and within regions/zones.
 
 ## Prometheus Metrics
 
@@ -24,10 +24,10 @@ The collector and reflector both expose Prometheus metrics on their `/metrics` e
 
 The collector exposes the following metrics on port 5200:
 
-- **`llama_packet_loss_percentage`** (Gauge) - Packet loss percentage for a given measurement period.
-- **`llama_packets_sent`** (Gauge) - Number of packets sent for a given measurement period.
-- **`llama_packets_lost`** (Gauge) - Number of packets lost for a given measurement period.
-- **`llama_rtt`** (Gauge) - Average round-trip time (RTT) for packets sent during a given measurement period.
+- **`udprobe_packet_loss_percentage`** (Gauge) - Packet loss percentage for a given measurement period.
+- **`udprobe_packets_sent`** (Gauge) - Number of packets sent for a given measurement period.
+- **`udprobe_packets_lost`** (Gauge) - Number of packets lost for a given measurement period.
+- **`udprobe_rtt`** (Gauge) - Average round-trip time (RTT) for packets sent during a given measurement period.
 
 ### Reflector Metrics
 
@@ -35,12 +35,12 @@ The reflector exposes the following metrics on port 8200:
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `llama_reflector_packets_received_total` | Counter | Total UDP packets received by the reflector |
-| `llama_reflector_packets_reflected_total` | Counter | Packets successfully reflected back to sender |
-| `llama_reflector_packets_bad_data_total` | Counter | Malformed/unparseable packets received |
-| `llama_reflector_packets_throttled_total` | Counter | Packets dropped due to rate limiting |
-| `llama_reflector_tos_changes_total` | Counter | ToS bit changes on the socket |
-| `llama_reflector_up` | Gauge | Health status: 1 if running, 0 if stopped |
+| `udprobe_reflector_packets_received_total` | Counter | Total UDP packets received by the reflector |
+| `udprobe_reflector_packets_reflected_total` | Counter | Packets successfully reflected back to sender |
+| `udprobe_reflector_packets_bad_data_total` | Counter | Malformed/unparseable packets received |
+| `udprobe_reflector_packets_throttled_total` | Counter | Packets dropped due to rate limiting |
+| `udprobe_reflector_tos_changes_total` | Counter | ToS bit changes on the socket |
+| `udprobe_reflector_up` | Gauge | Health status: 1 if running, 0 if stopped |
 
 ### Labels
 
@@ -55,17 +55,17 @@ Collector metrics include the following labels:
 
 Query average packet loss across all destinations:
 ```promql
-avg by (dst_hostname, dst_ip) (llama_packet_loss_percentage)
+avg by (dst_hostname, dst_ip) (udprobe_packet_loss_percentage)
 ```
 
 Query average RTT for a specific destination:
 ```promql
-llama_rtt{dst_hostname="server-1"}
+udprobe_rtt{dst_hostname="server-1"}
 ```
 
 Alert on high packet loss:
 ```promql
-avg by (dst_hostname) (llama_packet_loss_percentage) > 5
+avg by (dst_hostname) (udprobe_packet_loss_percentage) > 5
 ```
 
 ## Architecture
@@ -82,8 +82,8 @@ If you're looking to get started quickly with a basic setup that doesn't involve
 
 In your Go development environment, in separate windows:
 
-- `go run github.com/nsw3550/llama/cmd/reflector`
-- `go run github.com/nsw3550/llama/cmd/collector -llama.config configs/simple_example.yaml`
+- `go run github.com/nsw3550/udprobe/cmd/reflector`
+- `go run github.com/nsw3550/udprobe/cmd/collector -udprobe.config configs/simple_example.yaml`
 
 The collector will expose metrics on `http://localhost:5200/metrics` for Prometheus to scrape.
 
@@ -93,7 +93,7 @@ Add a scrape configuration to your `prometheus.yml`:
 
 ```yaml
 scrape_configs:
-  - job_name: 'llama'
+  - job_name: 'udprobe'
     static_configs:
       - targets: ['localhost:5200']
     scrape_interval: 30s  # Align with collector summarization interval
@@ -102,39 +102,39 @@ scrape_configs:
 ### Docker Deployment
 
 Pre-built Docker images are available on Docker Hub:
-- `tenkenx/llama-collector`
-- `tenkenx/llama-reflector`
+- `tenkenx/udprobe-collector`
+- `tenkenx/udprobe-reflector`
 
 #### Run Pre-built Images
 
 **Run Reflector:**
 ```bash
 docker run -d \
-  --name llama-reflector \
+  --name udprobe-reflector \
   -p 8100:8100 \
   -p 8200:8200 \
-  tenkenx/llama-reflector
+  tenkenx/udprobe-reflector
 ```
 
 **Run Collector:**
 ```bash
 docker run -d \
-  --name llama-collector \
-  -v /path/to/config.yaml:/etc/llama/config.yaml \
+  --name udprobe-collector \
+  -v /path/to/config.yaml:/etc/udprobe/config.yaml \
   -p 5200:5200 \
-  tenkenx/llama-collector
+  tenkenx/udprobe-collector
 ```
 
 #### Build from Source (Single Architecture)
 
 **Build Reflector:**
 ```bash
-docker build -t llama-reflector -f cmd/reflector/Dockerfile .
+docker build -t udprobe-reflector -f cmd/reflector/Dockerfile .
 ```
 
 **Build Collector:**
 ```bash
-docker build -t llama-collector -f cmd/collector/Dockerfile .
+docker build -t udprobe-collector -f cmd/collector/Dockerfile .
 ```
 
 #### Build for Multiple Architectures (buildx)
@@ -156,7 +156,7 @@ docker buildx inspect --bootstrap
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --file cmd/reflector/Dockerfile \
-  --tag llama-reflector:latest \
+  --tag udprobe-reflector:latest \
   --load \
   .
 
@@ -164,7 +164,7 @@ docker buildx build \
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --file cmd/reflector/Dockerfile \
-  --tag your-registry/llama-reflector:latest \
+  --tag your-registry/udprobe-reflector:latest \
   --push \
   .
 ```
@@ -175,7 +175,7 @@ docker buildx build \
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --file cmd/collector/Dockerfile \
-  --tag llama-collector:latest \
+  --tag udprobe-collector:latest \
   --load \
   .
 
@@ -183,7 +183,7 @@ docker buildx build \
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --file cmd/collector/Dockerfile \
-  --tag your-registry/llama-collector:latest \
+  --tag your-registry/udprobe-collector:latest \
   --push \
   .
 ```
@@ -199,7 +199,7 @@ docker buildx build \
 For production deployment on separate machines/instances:
 
 - Reflector: `reflector -port <port>` to start the reflector listening on a non-default port.
-- Collector: `collector -llama.config <config>` where the config is a YAML configuration based on one of the examples under `configs/`.
+- Collector: `collector -udprobe.config <config>` where the config is a YAML configuration based on one of the examples under `configs/`.
 
 Configure Prometheus to scrape the collector's `/metrics` endpoint from the API port (default: 5200).
 
@@ -209,7 +209,7 @@ This is a fork of the original Dropbox LLAMA project. The original was built dur
 
 ## Contributing
 
-This is a very early stage project. Contributions are welcome, but please check with the maintainer first before submitting pull requests. We appreciate your interest in improving LLAMA!
+This is a very early stage project. Contributions are welcome, but please check with the maintainer first before submitting pull requests. We appreciate your interest in improving UDProbe!
 
 ## Acknowledgements/References
 

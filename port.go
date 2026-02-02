@@ -1,5 +1,5 @@
 // Functionality for sending and receiving UDP probes on a socket.
-package llama
+package udprobe
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-	pb "github.com/nsw3550/llama/proto"
+	pb "github.com/nsw3550/udprobe/proto"
 	"google.golang.org/protobuf/proto"
 )
 
