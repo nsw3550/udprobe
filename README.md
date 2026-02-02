@@ -18,18 +18,33 @@ Network operators have found this useful on multiple occasions for gauging the i
 
 ## Prometheus Metrics
 
-The collector exposes the following Prometheus metrics on the `/metrics` endpoint:
+The collector and reflector both expose Prometheus metrics on their `/metrics` endpoints.
 
-### Metrics
+### Collector Metrics
+
+The collector exposes the following metrics on port 5200:
 
 - **`llama_packet_loss_percentage`** (Gauge) - Packet loss percentage for a given measurement period.
 - **`llama_packets_sent`** (Gauge) - Number of packets sent for a given measurement period.
 - **`llama_packets_lost`** (Gauge) - Number of packets lost for a given measurement period.
 - **`llama_rtt`** (Gauge) - Average round-trip time (RTT) for packets sent during a given measurement period.
 
+### Reflector Metrics
+
+The reflector exposes the following metrics on port 8200:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `llama_reflector_packets_received_total` | Counter | Total UDP packets received by the reflector |
+| `llama_reflector_packets_reflected_total` | Counter | Packets successfully reflected back to sender |
+| `llama_reflector_packets_bad_data_total` | Counter | Malformed/unparseable packets received |
+| `llama_reflector_packets_throttled_total` | Counter | Packets dropped due to rate limiting |
+| `llama_reflector_tos_changes_total` | Counter | ToS bit changes on the socket |
+| `llama_reflector_up` | Gauge | Health status: 1 if running, 0 if stopped |
+
 ### Labels
 
-All metrics include the following labels:
+Collector metrics include the following labels:
 
 - **`src_ip`** - Source IP address of the collector.
 - **`dst_ip`** - Destination IP address of the reflector.
@@ -97,6 +112,7 @@ Pre-built Docker images are available on Docker Hub:
 docker run -d \
   --name llama-reflector \
   -p 8100:8100 \
+  -p 8200:8200 \
   tenkenx/llama-reflector
 ```
 

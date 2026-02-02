@@ -13,6 +13,9 @@ import (
 // Reflect will listen on the provided UDPConn and will send back any UdpData
 // compliant packets that it receives, in compliance with the RateLimiter.
 func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
+	reflectorUp.Set(1)
+	defer reflectorUp.Set(0)
+
 	/*
 	   NOTE: This function assumes is has exclusive control and may improperly
 	         set the ToS bits if used in multiple routines. If that behavior is
@@ -26,17 +29,18 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 
 	log.Println("Beginning reflection on:", conn.LocalAddr())
 	for {
-		// Use reserve so we can track when trottling happens
+		// Use reserve so we can track when throttling happens
 		reservation := rl.Reserve()
 		delay := reservation.Delay()
 		if delay > 0 {
 			// We hit the rate limit, so log it
-			// TODO(nwinemiller): Log rate of `throttled`
 			time.Sleep(delay)
+			reflectorPacketsThrottled.Inc()
 		}
 
 		// Receive data from the connection
 		// Not currently using `oob`
+		reflectorPacketsReceived.Inc()
 		data, _, addr := Receive(dataBuf, oobBuf, conn)
 
 		// For this section, it might make sense to put in `Process` anyways.
@@ -47,7 +51,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		if err != nil {
 			// Else, don't reflect bad data
 			log.Println("Error hit when unmarshalling probe")
-			// TODO(nwinemiller): Log rate of `packets_bad_data`
+			reflectorPacketsBadData.Inc()
 			HandleMinorError(err)
 			continue
 		}
@@ -57,11 +61,12 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 			// Update the connection's ToS value
 			SetTos(conn, pbProbe.Tos[0])
 			tos = pbProbe.Tos[0]
+			reflectorTosChanges.Inc()
 		}
 
 		// Send the data back to sender
 		Send(data, conn, addr)
-		// TODO(nwinemiller): Log rate of `packets_processed`
+		reflectorPacketsReflected.Inc()
 	}
 }
 

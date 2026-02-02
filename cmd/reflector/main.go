@@ -17,7 +17,14 @@ var port = flag.Int("port", 8100, "Port to listen on for probes")
 // This exists to limit the reflector's ability to utilize CPU resources.
 var maxPPS = flag.Float64("max-pps", 5000, "Rate limit on packets per second")
 
-var BUFFER_SIZE int = 540672 // 528KB
+// API server address for metrics/health (default: 8200 to avoid conflicts with node_exporter)
+var apiBind = flag.String("api-bind", ":8200", "API server address for metrics/health")
+
+// Disable HTTP API server for metrics and health checks
+var noAPI = flag.Bool("no-api", false, "Disable HTTP API server")
+
+// 540672 bytes = 528KB
+var BUFFER_SIZE int = 540672
 
 func main() {
 	// Get command line args
@@ -48,6 +55,14 @@ func main() {
 	//     processing periods. So it's somewhat reliant on a smooth stream of
 	//     incoming probes.
 	rateLimiter := rate.NewLimiter(rate.Limit(*maxPPS), int(*maxPPS))
+
+	// Start API server if enabled
+	var api *llama.ReflectorAPI
+	if !*noAPI {
+		api = llama.NewReflectorAPI(*apiBind)
+		api.Run()
+		log.Printf("API listening on %s", *apiBind)
+	}
 
 	// Begin reflecting
 	llama.Reflect(conn, rateLimiter)
