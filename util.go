@@ -64,7 +64,7 @@ func HandleMinorError(err error) {
 	if err != nil {
 		// Could have this logging to Sentry
 		// log.Printf("ERROR TYPE: %#v\n", err)
-		// NOTE(dmar): Very annoying downside of this separate method
+		// NOTE(nwinemiller): Very annoying downside of this separate method
 		//			   approach is that this is the line number which
 		//			   appears in logs. Not the actual source.
 		log.Println("ERROR: ", err)

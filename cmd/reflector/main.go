@@ -46,12 +46,12 @@ func main() {
 	}(conn)
 
 	// Tell the socket to get timestamps and increase buffer size
-	// NOTE(dmar): We aren't actually using the socket timestamps yet
+	// NOTE(nwinemiller): We aren't actually using the socket timestamps yet
 	udprobe.EnableTimestamps(conn)
 	udprobe.SetRecvBufferSize(conn, BUFFER_SIZE)
 
 	// Create the rate limiter to be used in the reflector
-	// NOTE(dmar): This has the potential to be spikey if there are gaps between
+	// NOTE(nwinemiller): This has the potential to be spikey if there are gaps between
 	//     processing periods. So it's somewhat reliant on a smooth stream of
 	//     incoming probes.
 	rateLimiter := rate.NewLimiter(rate.Limit(*maxPPS), int(*maxPPS))

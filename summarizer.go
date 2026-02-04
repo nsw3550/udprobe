@@ -22,7 +22,7 @@ type Summary struct {
 
 // Summarizer stores results and summarizes them at intervals.
 type Summarizer struct {
-	// NOTE(dmar): For posterity, use value references for mutexes, not pointers
+	// NOTE(nwinemiller): For posterity, use value references for mutexes, not pointers
 	CMutex   sync.RWMutex
 	Cache    []*Summary
 	in       chan *Result
@@ -112,7 +112,7 @@ func (s *Summarizer) summarizeSet(results []*Result) *Summary {
 	// This would fail if the results were empty, but then there shouldn't
 	// be any.
 	pd := results[0].Pd
-	// NOTE(dmar): If we need timestamps again, this is the place to add them.
+	// NOTE(nwinemiller): If we need timestamps again, this is the place to add them.
 	// summary := &Summary{Pd: pd, TS: time.Now()}
 	summary := &Summary{Pd: pd}
 	// Perform the calculations
