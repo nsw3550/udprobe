@@ -66,7 +66,7 @@ func TestSummarizeSet(t *testing.T) {
 	if summary.Loss != expectedLoss {
 		t.Error("Loss bad. Got", summary.Loss, "expected", expectedLoss)
 	}
-	// NOTE(dmar): Keeping, because this code is still there but commented out.
+	// NOTE(nwinemiller): Keeping, because this code is still there but commented out.
 	//      However, we aren't setting this anymore, and explicitly leaving it
 	//      as zero.
 	// if summary.TS.IsZero() {

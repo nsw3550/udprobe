@@ -153,7 +153,7 @@ func (p *Port) recv() {
 			// handling. Should consolidate these at some point in UDP.
 			// Ignoring `oobLen` and `flags`for now
 			// We don't need `addr since we're matching on the signature
-			// NOTE(dmar): For some reason, on stop, every once in a while,
+			// NOTE(nwinemiller): For some reason, on stop, every once in a while,
 			//   A process will get stuck here. Specifically on the underlying
 			//   Recvmsg call in syscall. It seems to ignore the deadline, and
 			//   then stick around forever. Unsure of the cause.
