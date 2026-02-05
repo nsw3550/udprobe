@@ -49,9 +49,6 @@ func (p *Port) pd(dst *net.UDPAddr) *PathDist {
 	// TODO(nwinemiller): Since many of these are going to be repeats, keep these
 	//      around for reuse. That also allows memory pointers to be used
 	//      for equality/summarization later.
-	// BUG: If generated from ResolveUDPAddr in the form `:<port>` this will
-	//      actually be `nil`. However, it's fine if an explicit address
-	//      is provided.
 	pathDist := &PathDist{
 		SrcIP:   p.srcPD().SrcIP,
 		SrcPort: p.srcPD().SrcPort,
@@ -85,6 +82,10 @@ func (p *Port) send() {
 			log.Println("Stopping Port.send for", p.conn.LocalAddr())
 			return // Discontinue sending
 		case addr := <-p.tosend:
+			if addr.IP == nil {
+				log.Println("Skipping target with nil IP:", addr)
+				continue
+			}
 			pd := p.pd(addr)
 			tos := p.Tos()
 			key := NewID()

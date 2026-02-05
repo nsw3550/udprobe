@@ -73,6 +73,52 @@ func TestNewDefault(t *testing.T) {
    End Port tests
 */
 
+func TestSendValidation(t *testing.T) {
+	tosend := make(chan *net.UDPAddr)
+	stop := make(chan bool)
+	cbc := make(chan *Probe)
+
+	// Create a default UDPConn
+	udpAddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	conn, _ := net.ListenUDP("udp", udpAddr)
+	defer conn.Close()
+
+	port := NewPort(
+		conn,
+		tosend,
+		stop,
+		cbc,
+		time.Second,
+		3*time.Second,
+		200*time.Millisecond,
+	)
+
+	go port.send()
+	defer func() { stop <- true }()
+
+	// 1. Test nil IP
+	nilAddr := &net.UDPAddr{Port: 1234, IP: nil}
+	tosend <- nilAddr
+
+	// Give it a moment to process (or skip)
+	time.Sleep(10 * time.Millisecond)
+
+	if port.cache.Len() != 0 {
+		t.Errorf("Expected cache to be empty after sending nil IP, but got %d items", port.cache.Len())
+	}
+
+	// 2. Test valid IP
+	validAddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:1234")
+	tosend <- validAddr
+
+	// Give it a moment to process
+	time.Sleep(50 * time.Millisecond)
+
+	if port.cache.Len() != 1 {
+		t.Errorf("Expected cache to have 1 item after sending valid IP, but got %d items", port.cache.Len())
+	}
+}
+
 func TestIfaceToProbe(t *testing.T) {
 	// Convert the example
 	converted, err := IfaceToProbe(&exampleProbe)
