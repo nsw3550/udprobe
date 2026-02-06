@@ -1,6 +1,7 @@
 package udprobe
 
 import (
+	"net"
 	"testing"
 )
 
@@ -37,4 +38,19 @@ func TestNowUint64(t *testing.T) {
 		}
 		val = newVal
 	}
+}
+
+func TestSetRecvBufferSize(t *testing.T) {
+	addr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	size := 1024 * 1024 // 1MiB
+	SetRecvBufferSize(conn, size)
+
+	// We can't easily verify the size without using syscalls or conn.File(),
+	// but at least we know it didn't panic or fail (HandleError would have exited).
 }

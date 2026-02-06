@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -83,12 +82,7 @@ func HandleFatalError(err error) {
 
 // SetRecvBufferSize sets the size of the receive buffer for the conn to the
 // provided size in bytes.
-// TODO(nwinemiller): Validate and replace this with a simple call to conn.SetReadBuffer
 func SetRecvBufferSize(conn *net.UDPConn, size int) {
-	file, err := conn.File()
-	defer FileCloseHandler(file)
-	HandleError(err)
-	err = syscall.SetsockoptInt(int(file.Fd()), syscall.SOL_SOCKET,
-		syscall.SO_RCVBUF, size)
+	err := conn.SetReadBuffer(size)
 	HandleError(err)
 }
