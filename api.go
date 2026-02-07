@@ -83,6 +83,9 @@ func (api *API) Run() {
 // MergeUpdateTagSet combines a provided TagSet with the existing one
 func (api *API) MergeUpdateTagSet(t TagSet) {
 	api.mutex.Lock()
+	if api.ts == nil {
+		api.ts = make(TagSet)
+	}
 	// Copy new entries into the existing TagSet
 	// Allowing retention of existing entries, updating where needed, and adding new
 	for k, v := range t {
@@ -117,6 +120,9 @@ func NewAPI(s *Summarizer, t TagSet, addr string) *API {
 	server := &http.Server{
 		Addr:    addr,
 		Handler: handler,
+	}
+	if t == nil {
+		t = make(TagSet)
 	}
 	RegisterPrometheus() // Register the necessary variables with the Prometheus handler.
 	return &API{summarizer: s, ts: t, handler: handler, server: server}

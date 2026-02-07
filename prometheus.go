@@ -78,7 +78,7 @@ func (p *PrometheusMetricSetter) SetRTT(labels map[string]string, value float64)
 // EmitMetricsFromSummaries updates the Prometheus metrics based on the summaries with the necessary tags
 func EmitMetricsFromSummaries(summaries []*Summary, t TagSet, setter MetricSetter) {
 	for _, summary := range summaries {
-		tags := t[summary.Pd.DstIP.String()]
+		tags := t.Get(summary.Pd.DstIP.String())
 		labels := prometheus.Labels{
 			"src_ip":       summary.Pd.SrcIP.String(),
 			"dst_ip":       summary.Pd.DstIP.String(),
