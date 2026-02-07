@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net"
 	"strconv"
 
@@ -41,7 +40,7 @@ func main() {
 	defer func(c *net.UDPConn) {
 		err := c.Close()
 		if err != nil {
-			log.Fatal(err)
+			udprobe.HandleFatalErrorMsg(err, "failed to close connection")
 		}
 	}(conn)
 
@@ -61,7 +60,7 @@ func main() {
 	if !*noAPI {
 		api = udprobe.NewReflectorAPI(*apiBind)
 		api.Run()
-		log.Printf("API listening on %s", *apiBind)
+		udprobe.LogInfo("API listening on " + *apiBind)
 	}
 
 	// Begin reflecting

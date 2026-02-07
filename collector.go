@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -44,22 +43,22 @@ type Collector struct {
 // LoadConfig loads the collector's configuration from CLI flag if provided,
 // otherwise the default.
 func (c *Collector) LoadConfig() {
-	log.Println("Loading collector config")
+	LogInfo("Loading collector config")
 	// Try loading from flag first
 	if *configFile != "" {
 		err := c.loadConfigFromFlag()
 		if err == nil {
 			return
 		}
-		log.Fatal("Failed to load configuration:", err)
+		HandleFatalErrorMsg(err, "Failed to load configuration")
 		// If that wasn't provided, load the default
 	} else {
-		log.Println("No udprobe.config provided; loading default config")
+		LogInfo("No udprobe.config provided; loading default config")
 		err := c.loadConfigFromDefault()
 		if err == nil {
 			return
 		}
-		log.Fatal("Failed to load configuration:", err)
+		HandleFatalErrorMsg(err, "Failed to load configuration")
 	}
 }
 
@@ -126,7 +125,7 @@ func (c *Collector) loadConfigFromData(data []byte) error {
 
 // SetupAPI creates and performs initial setup of the API based on the config.
 func (c *Collector) SetupAPI() {
-	log.Println("Setting up API")
+	LogInfo("Setting up API")
 	// If we don't have a Summarizer, create one
 	if c.s == nil {
 		c.SetupSummarizer()
@@ -137,7 +136,7 @@ func (c *Collector) SetupAPI() {
 // SetupTagSet loads the tags for targets, based on the config, that will be
 // applied to summarized results.
 func (c *Collector) SetupTagSet() {
-	log.Println("Setting up tag set")
+	LogInfo("Setting up tag set")
 	c.ts = c.cfg.Targets.TagSet()
 }
 
@@ -150,7 +149,7 @@ func (c *Collector) SetupTestRunner(test TestConfig) {
 	// doesn't exist. So might want to break this into two parts.
 	targets, err := c.cfg.Targets[test.Targets].ListResolvedTargets()
 	if err != nil {
-		log.Fatal(err)
+		HandleFatalErrorMsg(err, "failed to resolve targets")
 	}
 	runner.Set(targets)
 	c.createPortGroupOnRunner(runner, test.PortGroup)
@@ -159,14 +158,14 @@ func (c *Collector) SetupTestRunner(test TestConfig) {
 
 // SetupTestRunners creates all the `tests` that are defined in the config.
 func (c *Collector) SetupTestRunners() {
-	log.Println("Setting up test runners")
+	LogInfo("Setting up test runners")
 	// Don't recreate the channel on reload, only create once
 	if c.cbc == nil {
 		c.cbc = make(chan *Probe, DEFAULT_CHANNEL_SIZE)
 	}
 	// If there are already test runners, they should be removed
 	if len(c.runners) > 0 {
-		log.Println("Found old test runners. Stopping and purging.")
+		LogInfo("Found old test runners. Stopping and purging.")
 		for _, runner := range c.runners {
 			runner.Stop()
 		}
@@ -213,7 +212,7 @@ func (c *Collector) createPortGroupOnRunner(runner *TestRunner, name string) {
 // SetupSummarizer creates the Summarizer and ResultHandlers that will
 // summarize and save the test results, based on the config.
 func (c *Collector) SetupSummarizer() {
-	log.Println("Setting up summarizer")
+	LogInfo("Setting up summarizer")
 	// Setup the summarizer and result handlers
 	resultChan := make(chan *Result, DEFAULT_CHANNEL_SIZE)
 	c.s = NewSummarizer(
@@ -225,7 +224,7 @@ func (c *Collector) SetupSummarizer() {
 
 // setupResultHandlers creates number of ResultHandlers defined by the config.
 func (c *Collector) setupResultHandlers(resultChan chan *Result) {
-	log.Println("Setting up", c.cfg.Summarization.Handlers, "result handlers")
+	LogInfo(fmt.Sprintf("Setting up %d result handlers", c.cfg.Summarization.Handlers))
 	for i := int64(0); i < c.cfg.Summarization.Handlers; i++ {
 		rh := NewResultHandler(c.cbc, resultChan)
 		c.rh = append(c.rh, rh)
@@ -236,18 +235,18 @@ func (c *Collector) setupResultHandlers(resultChan chan *Result) {
 func (c *Collector) Setup() {
 	// Ordering is important here, as some of these depend on elements
 	// setup earlier in the process.
-	log.Println("Setting up collector")
+	LogInfo("Setting up collector")
 	c.LoadConfig()
 	c.SetupTagSet()
 	c.SetupTestRunners()
 	c.SetupSummarizer()
 	c.SetupAPI()
-	log.Println("Collector setup complete")
+	LogInfo("Collector setup complete")
 }
 
 // Reload causes the config to be reread, and test runners recreated
 func (c *Collector) Reload() {
-	log.Println("Reloading collector")
+	LogInfo("Reloading collector")
 	// This should be an atomic operation, so no prep needed
 	c.LoadConfig()
 	// Same here
@@ -258,7 +257,7 @@ func (c *Collector) Reload() {
 	// We just need to start all the new test runners
 	// TODO(nwinemiller): This is redundant with part of Run() and
 	//             could be reorganized.
-	log.Println("Starting new test runners")
+	LogInfo("Starting new test runners")
 	for _, runner := range c.runners {
 		runner.Run()
 	}
@@ -270,14 +269,14 @@ func (c *Collector) Reload() {
 	//   the latest information each time, but keeping old data around.
 	//   This definitely isn't ideal, but sorting out what to keep or not is
 	//   non-trivial. So keep this as an improvement for the refactor.
-	log.Println("Updating TagSet on API")
+	LogInfo("Updating TagSet on API")
 	c.api.MergeUpdateTagSet(c.ts)
-	log.Println("Collector reload complete")
+	LogInfo("Collector reload complete")
 }
 
 // Run starts all of the components of the collector and begins testing.
 func (c *Collector) Run() {
-	log.Println("Starting Collector")
+	LogInfo("Starting Collector")
 	// Start the API
 	c.api.Run()
 	// Start the Summarizer
@@ -290,12 +289,12 @@ func (c *Collector) Run() {
 	for _, runner := range c.runners {
 		runner.Run()
 	}
-	log.Println("All Collector components running")
+	LogInfo("All Collector components running")
 }
 
 // Stop will signal all collector components to stop.
 func (c *Collector) Stop() {
-	log.Println("Stopping Collector")
+	LogInfo("Stopping Collector")
 	// Stop the TestRunners
 	for _, runner := range c.runners {
 		runner.Stop()
@@ -308,5 +307,5 @@ func (c *Collector) Stop() {
 	c.s.Stop()
 	// Stop the API
 	c.api.Stop()
-	log.Println("All Collector components signaled to stop")
+	LogInfo("All Collector components signaled to stop")
 }

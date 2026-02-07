@@ -1,7 +1,6 @@
 package udprobe
 
 import (
-	"log"
 	"net"
 	"time"
 	"unsafe"
@@ -21,7 +20,7 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 	dataBuf := make([]byte, 4096)
 	oobBuf := make([]byte, 4096)
 
-	log.Println("Beginning reflection on:", conn.LocalAddr())
+	LogInfo("Beginning reflection on: " + conn.LocalAddr().String())
 	for {
 		// Use reserve so we can track when throttling happens
 		reservation := rl.Reserve()
@@ -44,9 +43,8 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		err := proto.Unmarshal(data, pbProbe)
 		if err != nil {
 			// Else, don't reflect bad data
-			log.Println("Error hit when unmarshalling probe")
 			reflectorPacketsBadData.Inc()
-			HandleMinorError(err)
+			HandleMinorErrorMsg(err, "failed to unmarshal probe")
 			continue
 		}
 

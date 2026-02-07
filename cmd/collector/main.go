@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 
@@ -29,11 +28,11 @@ func main() {
 		sig := <-sigChan
 		switch sig {
 		case unix.SIGINT, unix.SIGTERM:
-			log.Printf("Received %s, shutting down", sig)
+			udprobe.LogInfo("Received signal, shutting down")
 			// TODO(nwinemiller): Add smarter handling here for around stopping things
 			return
 		case unix.SIGHUP:
-			log.Printf("Received %s, reloading and reconfiguring", sig)
+			udprobe.LogInfo("Received SIGHUP, reloading and reconfiguring")
 			collector.Reload()
 		}
 	}

@@ -2,7 +2,6 @@ package udprobe
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,7 +21,7 @@ func (api *ReflectorAPI) StatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *ReflectorAPI) Run() {
-	go func() { log.Fatal(api.server.ListenAndServe()) }()
+	go func() { HandleFatalErrorMsg(api.server.ListenAndServe(), "Reflector API server failed") }()
 }
 
 func (api *ReflectorAPI) Stop() {

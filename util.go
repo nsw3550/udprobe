@@ -56,28 +56,45 @@ func FileCloseHandler(f *os.File) {
 }
 
 func HandleError(err error) {
-	HandleFatalError(err)
+	if err != nil {
+		log.Output(2, "FATAL ERROR: "+err.Error())
+		os.Exit(1)
+	}
 }
 
 func HandleMinorError(err error) {
 	if err != nil {
-		// Could have this logging to Sentry
-		// log.Printf("ERROR TYPE: %#v\n", err)
-		// NOTE(nwinemiller): Very annoying downside of this separate method
-		//			   approach is that this is the line number which
-		//			   appears in logs. Not the actual source.
-		log.Println("ERROR: ", err)
+		log.Output(2, "MINOR ERROR: "+err.Error())
 	}
 }
 
-// HandleError receives an error, then logs and exits if not nil.
-// TODO(nwinemiller): Create additional simple handlers for non-fatal issues
+func HandleMinorErrorMsg(err error, msg string) {
+	if err != nil {
+		log.Output(2, "MINOR ERROR: "+msg+": "+err.Error())
+	}
+}
+
+// HandleFatalError receives an error, then logs and exits if not nil.
 func HandleFatalError(err error) {
 	if err != nil {
-		// Could have this logging to Sentry
-		// log.Printf("ERROR TYPE: %#v\n", err)
-		log.Fatal("ERROR: ", err)
+		log.Output(2, "FATAL ERROR: "+err.Error())
+		os.Exit(1)
 	}
+}
+
+func HandleFatalErrorMsg(err error, msg string) {
+	if err != nil {
+		log.Output(2, "FATAL ERROR: "+msg+": "+err.Error())
+		os.Exit(1)
+	}
+}
+
+func LogWarning(msg string) {
+	log.Output(2, "WARNING: "+msg)
+}
+
+func LogInfo(msg string) {
+	log.Output(2, "INFO: "+msg)
 }
 
 // SetRecvBufferSize sets the size of the receive buffer for the conn to the

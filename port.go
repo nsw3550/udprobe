@@ -4,7 +4,6 @@ package udprobe
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"runtime"
 	"strings"
@@ -79,11 +78,11 @@ func (p *Port) send() {
 	for {
 		select {
 		case <-p.stop:
-			log.Println("Stopping Port.send for", p.conn.LocalAddr())
+			LogInfo("Stopping Port.send for " + p.conn.LocalAddr().String())
 			return // Discontinue sending
 		case addr := <-p.tosend:
 			if addr.IP == nil {
-				log.Println("Skipping target with nil IP:", addr)
+				LogWarning("Skipping target with nil IP: " + addr.String())
 				continue
 			}
 			pd := p.pd(addr)
@@ -139,7 +138,7 @@ func (p *Port) recv() {
 	for {
 		select {
 		case <-p.stop:
-			log.Println("Stopping Port.recv for:", p.conn.LocalAddr())
+			LogInfo("Stopping Port.recv for: " + p.conn.LocalAddr().String())
 			// Don't process expirations anymore
 			// This prevents outstanding probes from reporting as loss
 			p.cache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[string, *Probe]) {})
@@ -170,19 +169,18 @@ func (p *Port) recv() {
 					// This means the connection is closed, so we can't use it
 					// In lieu of better cleanup behavior (for whatever case
 					// might cause this) have it cause a restart of the process
-					log.Fatal("Attempted to read from closed conn:",
-						p.conn.LocalAddr())
+					HandleFatalErrorMsg(err, "Attempted to read from closed conn: "+
+						p.conn.LocalAddr().String())
 					continue
 				} else {
 					// Some other problem
-					log.Fatal("Failure while listening on ", p.conn.LocalAddr(),
-						"\n", err.Error())
+					HandleFatalErrorMsg(err, "Failure while listening on "+p.conn.LocalAddr().String())
 				}
 			}
 			data := dataBuf[0:dataLen]
 			udpData := &pb.Probe{}
 			err = proto.Unmarshal(data, udpData)
-			HandleMinorError(err)
+			HandleMinorErrorMsg(err, "failed to unmarshal probe data")
 			id := string(udpData.Signature[:])
 			// TODO(nwinemiller): Should be doing something about this error
 			item := p.cache.Get(id)
@@ -195,7 +193,7 @@ func (p *Port) recv() {
 			// TODO(nwinemiller): Make wish to make a `ProbeCache` that does this
 			//             automatically under the hood.
 			probe, err := IfaceToProbe(item.Value())
-			HandleMinorError(err)
+			HandleMinorErrorMsg(err, "failed to convert interface to Probe")
 			// TODO(nwinemiller): Update this to be more clean when moving to protobuf
 			probe.CRcvd = NowUint64()
 			// Error would be if the key didn't exist, meaning it expired
@@ -240,13 +238,13 @@ type PathDist struct {
 // be better suited elsewhere. However, this seems like a fairly simple option
 // for now, to avoid needing locks and conflicts between send/recv.
 func cleanup(port *Port) {
-	log.Println("Started closing port on:", port.conn.LocalAddr())
+	LogInfo("Started closing port on: " + port.conn.LocalAddr().String())
 	err := port.conn.Close()
-	HandleMinorError(err)
+	HandleMinorErrorMsg(err, "failed to close port")
 	// This might not actually be necessary, if we've already stopped
 	// using this whole thing. But doesn't hurt either.
 	port.cache = nil // Dereference the cache
-	log.Println("Finished closing port on:", port.conn.LocalAddr())
+	LogInfo("Finished closing port on: " + port.conn.LocalAddr().String())
 }
 
 // New creates and returns a new Port with associated inputs, outputs,

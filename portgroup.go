@@ -3,7 +3,6 @@
 package udprobe
 
 import (
-	"log"
 	"net"
 	"time"
 )
@@ -98,7 +97,7 @@ func (pg *PortGroup) run() {
 	for {
 		select {
 		case <-pg.stop:
-			log.Println("Stopping PortGroup")
+			LogInfo("Stopping PortGroup")
 			pg.ports = nil
 			return // Stop sending and burn it all down
 		case addr := <-pg.tosend:

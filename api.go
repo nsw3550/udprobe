@@ -20,7 +20,6 @@ package udprobe
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 
@@ -44,7 +43,7 @@ func (api *API) PromHandler() http.Handler {
 		// Lock the existing summaries cache
 		api.summarizer.CMutex.RLock()
 		summaries := api.summarizer.Cache
-		log.Println("Found", len(summaries), "data points")
+		LogInfo(fmt.Sprintf("Found %d data points", len(summaries)))
 		// Convert the summaries to Prometheus metrics
 		api.mutex.RLock()
 		p := &PrometheusMetricSetter{}
@@ -68,9 +67,9 @@ func (api *API) StatusHandler(rw http.ResponseWriter, request *http.Request) {
 func (api *API) Stop() {
 	err := api.server.Close()
 	if err != nil {
-		log.Println("Error stopping API:", err)
+		HandleMinorErrorMsg(err, "Error stopping API")
 	}
-	log.Println("API Stopped")
+	LogInfo("API Stopped")
 }
 
 // Run calls RunForever in a separate goroutine for non-blocking behavior.
@@ -104,7 +103,7 @@ func (api *API) RunForever() {
 	api.setupHandlers()
 	// TODO(nwinemiller): Better handling around if this dies or gets shutdown. Though
 	//      if it dies, the collector is kinda useless anyways.
-	log.Fatal(api.server.ListenAndServe())
+	HandleFatalErrorMsg(api.server.ListenAndServe(), "API server failed")
 }
 
 // SetupHandlers attaches the handlers above to the http server mux.

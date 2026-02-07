@@ -2,7 +2,6 @@ package udprobe
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"time"
@@ -62,7 +61,7 @@ func (s *Summarizer) waitToSummarize() {
 	// immediately. This allows at least a full cycle of results to populate
 	// before the first summarization. So the first summarization will likely
 	// cover more results than subsequent ones.
-	log.Printf("Starting ticker for Summarizer at %v intervals\n", s.interval)
+	LogInfo(fmt.Sprintf("Starting ticker for Summarizer at %v intervals", s.interval))
 	s.ticker = time.NewTicker(s.interval)
 	// Now loop infinitely waiting for ticks
 	for {
@@ -70,9 +69,9 @@ func (s *Summarizer) waitToSummarize() {
 		case <-s.stop:
 			return
 		case <-s.ticker.C:
-			log.Println("Summarizing results")
+			LogInfo("Summarizing results")
 			s.summarize()
-			log.Println("Summarization complete")
+			LogInfo("Summarization complete")
 		}
 	}
 }
@@ -84,7 +83,7 @@ func (s *Summarizer) summarize() {
 	s.mutex.Lock()
 	// Extract the results and reset the map
 	results := s.results
-	log.Println("Found", len(results), "results to summarize")
+	LogInfo(fmt.Sprintf("Found %d results to summarize", len(results)))
 	s.results = make(map[string][]*Result)
 	s.mutex.Unlock()
 	// Create a new cache for this batch of results
@@ -165,7 +164,7 @@ func (s *Summarizer) Stop() {
 	select {
 	case <-s.stop: // Provide a safe out if already stopped
 	default:
-		log.Println("Stopping Summarizer")
+		LogInfo("Stopping Summarizer")
 		s.ticker.Stop()
 		close(s.stop)
 	}

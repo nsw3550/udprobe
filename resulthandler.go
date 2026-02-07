@@ -2,7 +2,6 @@ package udprobe
 
 import (
 	"errors"
-	"log"
 )
 
 // Result defines characteristics of a single completed Probe.
@@ -47,7 +46,7 @@ func (rh *ResultHandler) run() {
 
 // Stop will stop the rh.
 func (rh *ResultHandler) Stop() {
-	log.Println("Stopping ResultHandler")
+	LogInfo("Stopping ResultHandler")
 	close(rh.stop)
 }
 
@@ -68,7 +67,7 @@ func Process(probe *Probe) *Result {
 	}
 	// Add additional calculations here
 	err := RTT(probe, result)
-	HandleMinorError(err)
+	HandleMinorErrorMsg(err, "failed to calculate RTT")
 	return result
 }
 

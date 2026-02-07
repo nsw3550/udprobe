@@ -3,7 +3,6 @@ package udprobe
 import (
 	"context"
 	"golang.org/x/time/rate"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -75,7 +74,7 @@ func (tr *TestRunner) cycleTargets() {
 // Stop will stop the TestRunner after the current cycle and any underlying
 // PortGroup and Port(s).
 func (tr *TestRunner) Stop() {
-	log.Println("Initiating Stop in TestRunner")
+	LogInfo("Initiating Stop in TestRunner")
 	close(tr.stop)
 	// Release the portgroup
 	tr.pg = nil
