@@ -177,5 +177,5 @@ Sends a UDP packet to the specified address with the given Type of Service byte.
 
 ## Related Documentation
 
-- [Configuration](configuration.md) - Configuration file format
-- [Architecture](architecture.md) - System architecture and design
+- [Configuration](../configuration.md) - Configuration file format
+- [Architecture](../architecture.md) - System architecture and design
