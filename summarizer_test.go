@@ -41,12 +41,15 @@ func TestSummarizeSet(t *testing.T) {
 	// Create some fake results
 	key := "test"
 	s.results = make(map[string][]*Result)
-	s.results[key] = append(s.results[key], &Result{RTT: 1000000})
-	s.results[key] = append(s.results[key], &Result{Lost: true})
-	s.results[key] = append(s.results[key], &Result{RTT: 3000000})
+	s.results[key] = append(s.results[key], &Result{RTT: 1000000, Tos: byte(46)})
+	s.results[key] = append(s.results[key], &Result{Lost: true, Tos: byte(46)})
+	s.results[key] = append(s.results[key], &Result{RTT: 3000000, Tos: byte(46)})
 	// Summarize
 	summary := s.summarizeSet(s.results[key])
 	// Validate results
+	if summary.Tos != 46 {
+		t.Error("Tos bad. Got", summary.Tos, "expected", 46)
+	}
 	if summary.RTTAvg != 2.0 {
 		t.Error("RTTAvg bad. Got", summary.RTTAvg, "expected", 2.0)
 	}
@@ -88,7 +91,7 @@ func TestAddResult(t *testing.T) {
 	}
 	s.addResult(result)
 	// Make sure the result exists
-	key := fmt.Sprintf("src_%v->dst_%v", result.Pd.SrcIP, result.Pd.DstIP)
+	key := fmt.Sprintf("src_%v->dst_%v->tos_%v", result.Pd.SrcIP, result.Pd.DstIP, result.Tos)
 	if len(s.results[key]) != 1 {
 		t.Error("Results should contain one entry, but has", len(s.results[key]))
 	}

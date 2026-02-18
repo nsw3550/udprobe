@@ -16,6 +16,7 @@ type Summary struct {
 	Sent   int
 	Lost   int
 	Loss   float64
+	Tos    byte
 	TS     time.Time // No longer used, but keeping for posterity
 }
 
@@ -111,9 +112,10 @@ func (s *Summarizer) summarizeSet(results []*Result) *Summary {
 	// This would fail if the results were empty, but then there shouldn't
 	// be any.
 	pd := results[0].Pd
+	tos := results[0].Tos
 	// NOTE(nwinemiller): If we need timestamps again, this is the place to add them.
 	// summary := &Summary{Pd: pd, TS: time.Now()}
-	summary := &Summary{Pd: pd}
+	summary := &Summary{Pd: pd, Tos: tos}
 	// Perform the calculations
 	CalcCounts(results, summary)
 	CalcLoss(summary)
@@ -152,7 +154,7 @@ func (s *Summarizer) addResult(result *Result) {
 	// For now, just keying this on the src/dst IPs to avoid extra points.
 	// TODO(nwinemiller): In the future, based on how the above todo turns out,
 	//      perhaps customize what fields are used/ignored.
-	key := fmt.Sprintf("src_%v->dst_%v", result.Pd.SrcIP, result.Pd.DstIP)
+	key := fmt.Sprintf("src_%v->dst_%v->tos_%v", result.Pd.SrcIP, result.Pd.DstIP, result.Tos)
 	s.mutex.Lock()
 	s.results[key] = append(s.results[key], result)
 	// This is simple and frequent, so avoiding the defer overhead

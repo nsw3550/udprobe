@@ -66,7 +66,7 @@ func TestProcess(t *testing.T) {
 		Pd:    pd,
 		CSent: uint64(100000),
 		CRcvd: uint64(200000),
-		Tos:   byte(0),
+		Tos:   byte(46),
 	}
 	// Make sure it processes correctly, but leave specific cases to any tests
 	// below.
@@ -85,6 +85,10 @@ func TestProcess(t *testing.T) {
 	// The Done time should make the CRcvd time on the Probe
 	if result.Done != probe.CRcvd {
 		t.Error("CRcvd time wasn't propagated to Result")
+	}
+	// Verify Tos is propagated
+	if result.Tos != probe.Tos {
+		t.Error("Tos wasn't propagated to Result")
 	}
 }
 

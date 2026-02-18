@@ -72,6 +72,7 @@ func TestEmitMetricsFromSummary(t *testing.T) {
 		"dst_ip":       "2.2.2.2",
 		"src_hostname": "test-source",
 		"dst_hostname": "test-destination",
+		"tos":          "0",
 	}
 
 	expected := []struct {

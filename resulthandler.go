@@ -10,6 +10,7 @@ type Result struct {
 	RTT  uint64    // Round trip time in nanoseconds
 	Done uint64    // When the test completed (was received by Port) in ns
 	Lost bool      // If the Probe was lost and never actually completed
+	Tos  byte      // ToS value for the probe
 }
 
 // ResultHandler is a post-processor for Probes and converts them to Results.
@@ -64,6 +65,7 @@ func Process(probe *InFlightProbe) *Result {
 	result := &Result{
 		Pd:   probe.Pd,
 		Done: probe.CRcvd,
+		Tos:  probe.Tos,
 	}
 	// Add additional calculations here
 	err := RTT(probe, result)
