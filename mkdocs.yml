@@ -1,0 +1,42 @@
+site_name: UDProbe
+site_description: Library for testing and measuring network loss and latency between distributed endpoints
+site_url: https://udprobe.readthedocs.io/
+repo_url: https://github.com/nsw3550/udprobe
+repo_name: nsw3550/udprobe
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: light blue
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Architecture: architecture.md
+  - API Reference: api/index.md
+
+markdown_extensions:
+  - attr_list
+  - tables
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+plugins:
+  - search:
+      lang: en
