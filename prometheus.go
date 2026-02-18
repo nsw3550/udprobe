@@ -1,6 +1,7 @@
 package udprobe
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,7 +9,7 @@ import (
 
 var (
 	// Labels we want to include in our metrics. Update if we want to add extra tags / labels.
-	udprobeLabels = []string{"src_ip", "dst_ip", "src_hostname", "dst_hostname"}
+	udprobeLabels = []string{"src_ip", "dst_ip", "src_hostname", "dst_hostname", "tos"}
 
 	// Packet Loss Percentage
 	udprobePacketLoss = prometheus.NewGaugeVec(
@@ -84,6 +85,7 @@ func EmitMetricsFromSummaries(summaries []*Summary, t TagSet, setter MetricSette
 			"dst_ip":       summary.Pd.DstIP.String(),
 			"src_hostname": tags["src_hostname"],
 			"dst_hostname": tags["dst_hostname"],
+			"tos":          fmt.Sprintf("%d", summary.Tos),
 		}
 		setter.SetPacketLoss(labels, summary.Loss)
 		setter.SetPacketsSent(labels, float64(summary.Sent))
