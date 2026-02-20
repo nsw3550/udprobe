@@ -3,6 +3,7 @@ site_description: Library for testing and measuring network loss and latency bet
 site_url: https://udprobe.readthedocs.io/
 repo_url: https://github.com/nsw3550/udprobe
 repo_name: nsw3550/udprobe
+edit_uri: edit/main/docs/
 
 theme:
   name: readthedocs
