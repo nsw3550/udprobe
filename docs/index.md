@@ -1,5 +1,8 @@
 # UDProbe
 
+[![Last commit](https://img.shields.io/github/last-commit/nsw3550/udprobe?logo=github)](https://github.com/nsw3550/udprobe)
+[![Build status](https://img.shields.io/github/actions/workflow/status/nsw3550/udprobe/ci.yml?branch=main)](https://github.com/nsw3550/udprobe/actions)
+
 UDProbe (mix of UDP and Probe) is a library for testing and measuring network loss and latency between distributed endpoints.
 
 It does this by sending UDP datagrams/probes from **collectors** to **reflectors** and measuring how long it takes for them to return, if they return at all. UDP is used to provide ECMP hashing over multiple paths (a win over ICMP) without the need for setup/teardown and per-packet granularity (a win over TCP).
