@@ -2,7 +2,9 @@
 > It has been modified to export Prometheus metrics instead of InfluxDB and includes
 > Docker deployment support.
 
+
 # UDProbe
+[Read the Docs](https://udprobe.readthedocs.io/en/latest/)
 
 UDProbe (mix of UDP and Probe) is a library for testing and measuring network loss and latency between distributed endpoints.
 
@@ -16,185 +18,19 @@ Network operators often find this useful for gauging the impact of network issue
 
 **Even if you operate entirely in the cloud** UDProbe can help identify reachability and network health issues between and within regions/zones.
 
+## Why UDProbe?
+- **Lightweight**: Docker images are ~30MB in size. Directly built binaries are around ~10MB in size.
+- **Simple Configuration**: Collectors require minimal configuration and reflectors require no configuration (ideal for remote site deployments).
+- **UDP Based Probing**: Cycling UDP source ports allows for better coverage over ECMP paths.
+- **QOS Support**: Probes can be sent with different TOS values to monitor different traffic classes.
+- **Extensible**: Written in Go, easily modifiable to support different environments.
+- **Prometheus Support**: Out of the box integration with Prometheus allowing for straightforward alerting and dashboarding.
+
+## Get Started
+Jump in with the [Getting Started](https://udprobe.readthedocs.io/en/latest/#quick-start) guide and get up in running with a few minutes.
+
 ## Architecture
-
-- **Reflector** - Lightweight daemon for receiving probes and sending them back to their source. Exposes basic health metrics via `/metrics` endpoint.
-- **Collector** - Sends probes to reflectors sourced from different ports, records results, and exposes Prometheus metrics via `/metrics` endpoint.
-- **Prometheus** - External Prometheus server scrapes metrics from the collector's `/metrics` endpoint for monitoring and alerting.
-
-## Prometheus Metrics
-
-The collector and reflector both expose Prometheus metrics on their `/metrics` endpoints.
-
-### Collector Metrics
-
-The collector exposes the following metrics on port 5200:
-| Metric | Type | Description |
-|--------|------|-------------|
-| `udprobe_packet_loss_percentage` | Gauge | Packet loss percentage for a given measurement period |
-| `udprobe_packets_sent` | Gauge | Number of packets sent for a given measurement period |
-| `udprobe_packets_lost` | Gauge | Number of packets lost for a given measurement period |
-| `udprobe_rtt` | Gauge | Average round-trip time (RTT) for packets sent during a given measurement period |
-
-### Reflector Metrics
-
-The reflector exposes the following metrics on port 8200:
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| `udprobe_reflector_packets_received_total` | Counter | Total UDP packets received by the reflector |
-| `udprobe_reflector_packets_reflected_total` | Counter | Packets successfully reflected back to sender |
-| `udprobe_reflector_packets_bad_data_total` | Counter | Malformed/unparseable packets received |
-| `udprobe_reflector_packets_throttled_total` | Counter | Packets dropped due to rate limiting |
-| `udprobe_reflector_tos_changes_total` | Counter | ToS bit changes on the socket |
-| `udprobe_reflector_up` | Gauge | Health status: 1 if running, 0 if stopped |
-
-### Labels
-
-Collector metrics include the following labels:
-
-- **`src_ip`** - Source IP address of the collector.
-- **`dst_ip`** - Destination IP address of the reflector.
-- **`src_hostname`** - Source hostname (from config tags).
-- **`dst_hostname`** - Destination hostname (from config tags).
-
-### Example Query
-
-Query average packet loss across all destinations:
-```promql
-avg by (dst_hostname, dst_ip) (udprobe_packet_loss_percentage)
-```
-
-Query average RTT for a specific destination:
-```promql
-udprobe_rtt{dst_hostname="server-1"}
-```
-
-Alert on high packet loss:
-```promql
-avg by (dst_hostname) (udprobe_packet_loss_percentage) > 5
-```
-
-## Quick Start
-
-If you're looking to get started quickly with a basic setup that doesn't involve special integrations or customization, this should get you going. This assumes you have Prometheus configured to scrape from the collector.
-
-### Local Development
-
-In your Go development environment, in separate windows:
-
-- `go run github.com/nsw3550/udprobe/cmd/reflector`
-- `go run github.com/nsw3550/udprobe/cmd/collector -udprobe.config configs/simple_example.yaml`
-
-The collector will expose metrics on `http://localhost:5200/metrics` for Prometheus to scrape.
-
-### Prometheus Configuration
-
-Add a scrape configuration to your `prometheus.yml`:
-
-```yaml
-scrape_configs:
-  - job_name: 'udprobe'
-    static_configs:
-      - targets: ['localhost:5200']
-    scrape_interval: 30s  # Align with collector summarization interval
-```
-
-### Docker Deployment
-
-Pre-built Docker images are available on Docker Hub:
-- `tenkenx/udprobe-collector`
-- `tenkenx/udprobe-reflector`
-
-#### Run Pre-built Images
-
-**Run Reflector:**
-```bash
-docker run -d \
-  --name udprobe-reflector \
-  -p 8100:8100 \
-  -p 8200:8200 \
-  tenkenx/udprobe-reflector
-```
-
-**Run Collector:**
-```bash
-docker run -d \
-  --name udprobe-collector \
-  -v /path/to/config.yaml:/etc/udprobe/config.yaml \
-  -p 5200:5200 \
-  tenkenx/udprobe-collector
-```
-
-#### Build from Source (Single Architecture)
-
-**Build Reflector:**
-```bash
-docker build -t udprobe-reflector -f cmd/reflector/Dockerfile .
-```
-
-**Build Collector:**
-```bash
-docker build -t udprobe-collector -f cmd/collector/Dockerfile .
-```
-
-#### Build for Multiple Architectures (buildx)
-
-To build images that support both `amd64` and `arm64` architectures, use `docker buildx`:
-
-**Prerequisites:**
-```bash
-# Create a new builder instance
-docker buildx create --name multiarch-builder --use
-
-# Inspect builder and bootstrap
-docker buildx inspect --bootstrap
-```
-
-**Build Reflector for amd64 and arm64:**
-```bash
-# Build and load for local platform (faster for testing)
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --file cmd/reflector/Dockerfile \
-  --tag udprobe-reflector:latest \
-  --load \
-  .
-
-# Or build and push directly to registry
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --file cmd/reflector/Dockerfile \
-  --tag your-registry/udprobe-reflector:latest \
-  --push \
-  .
-```
-
-**Build Collector for amd64 and arm64:**
-```bash
-# Build and load for local platform
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --file cmd/collector/Dockerfile \
-  --tag udprobe-collector:latest \
-  --load \
-  .
-
-# Or build and push directly to registry
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --file cmd/collector/Dockerfile \
-  --tag your-registry/udprobe-collector:latest \
-  --push \
-  .
-```
-
-**Notes:**
-- Use `--load` flag to build for your current platform only (required if running locally)
-- Use `--push` flag to build all platforms and push to a Docker registry
-- You can also specify a single platform if needed: `--platform linux/arm64`
-- The images use multi-arch base images, so they will run on both architectures
-
+Learn more about the system architecture over on our [Architecture](https://udprobe.readthedocs.io/en/latest/architecture/) page.
 ## Ongoing Development
 
 This is a fork of the original Dropbox LLAMA project. The original was built during a [Dropbox Hack Week](https://www.theverge.com/2014/7/24/5930927/why-dropbox-gives-its-employees-a-week-to-do-whatever-they-want). This fork is currently in early development with significant changes including migration to Prometheus metrics and modernized dependencies. The API and config format may continue to evolve.

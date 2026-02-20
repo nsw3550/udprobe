@@ -21,12 +21,12 @@ The simple format maps IP addresses to tags:
 Example:
 
 ```yaml
-127.0.0.1:
-    dst_hostname: localhost
-    dst_region: west
-127.0.0.2:
+192.168.1.1:
+    dst_hostname: server-1
+    src_hostname: collector-1
+192.168.1.2:
     dst_hostname: server-2
-    dst_region: east
+    src_hostname: collector-1
 ```
 
 ## Full Format
@@ -45,6 +45,50 @@ The full configuration format provides fine-grained control over the collector's
 | `tests` | array | Test definitions combining other config |
 | `targets` | object | Target reflector endpoints |
 
+### Full Format Example
+
+```yaml
+summarization:
+    interval:   30
+    handlers:   2
+
+api:
+    bind:   0.0.0.0:5200
+
+ports:
+    default:
+        ip:         0.0.0.0
+        port:       0
+        tos:        0
+        timeout:    1000
+
+port_groups:
+    default:
+        - port:     default
+          count:    4
+
+rate_limits:
+    default:
+        cps:    4.0
+
+tests:
+    - targets:      default
+      port_group:   default
+      rate_limit:   default
+
+targets:
+    default:
+        - ip:   192.168.1.1
+          port: 8100
+          tags:
+            dst_hostname: reflector-1
+            src_hostname: collector-1
+        - ip:   192.168.1.2
+          port: 8100
+          tags:
+            dst_hostname: reflector-2
+            src_hostname: collector-1
+```
 ### Summarization
 
 Controls how often test results are aggregated:
@@ -147,11 +191,11 @@ Defines reflector endpoints to test:
 ```yaml
 targets:
     default:
-        - ip:   127.0.0.1
+        - ip:   192.168.0.1
           port: 8100
           tags:
-            dst_hostname: localhost
-            dst_region: west
+            dst_hostname: reflector
+            src_hostname: collector
 ```
 
 | Field | Type | Description |
@@ -160,54 +204,15 @@ targets:
 | `port` | int | Target port |
 | `tags` | object | Key-value pairs for metrics labeling |
 
-## Complete Example
+
+## Prometheus Configuration
+
+Add a scrape configuration to your `prometheus.yml`:
 
 ```yaml
-summarization:
-    interval:   30
-    handlers:   2
-
-api:
-    bind:   0.0.0.0:5200
-
-ports:
-    default:
-        ip:         0.0.0.0
-        port:       0
-        tos:        0
-        timeout:    1000
-
-port_groups:
-    default:
-        - port:     default
-          count:    4
-
-rate_limits:
-    default:
-        cps:    4.0
-
-tests:
-    - targets:      default
-      port_group:   default
-      rate_limit:   default
-
-targets:
-    default:
-        - ip:   192.168.1.1
-          port: 8100
-          tags:
-            dst_hostname: reflector-1
-            dst_region: west
-        - ip:   192.168.1.2
-          port: 8100
-          tags:
-            dst_hostname: reflector-2
-            dst_region: east
+scrape_configs:
+  - job_name: 'udprobe'
+    static_configs:
+      - targets: ['<COLLECTOR_IP>:5200']
+    scrape_interval: 30s  # Align with collector summarization interval
 ```
-
-## Command Line Flags
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `udprobe.config` | Path to configuration file | (none) |
-| `udprobe.dst-port` | Target port (legacy config only) | 8100 |

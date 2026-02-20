@@ -5,18 +5,17 @@ UDProbe consists of two main components: the **Reflector** and the **Collector**
 ## Overview
 
 ```
-+--------+                      +-----------+
-|        |   UDP Probes         |           |
-|        |  =============>       |           |
-|        |                      |           |
-|  COL   |   Reflected Probes   |  REFLECTOR|
-| LECTOR |  <=============      |           |
-|        |                      |           |
-|        |   Prometheus Metrics |           |
-+--------+---------------------> |           |
-        :5200/metrics           |           |
-                                +-----------+
-                                      :8100
+ +----------- +           +-----------+                      +-----------+
+ |            |           |           |   UDP Probes         |           |
+ |            |           |           |  =============>      |           |
+ |            | =======>  |           |                      |           |
+ | Prometheus | Scrapes   | COLLECTOR |   Reflected Probes   | REFLECTOR |
+ |            |           |           |  <=============      |           |
+ |            |           |           |                      |           |
+ |            |           |           |                      |           |
+ +----------- +           +-----------+                      +-----------+
+                          :5200/metrics                      :8100 (for probes)
+                                                             :8200/metrics (for reflector metrics)
 ```
 
 ## Components
@@ -77,8 +76,12 @@ The collector is responsible for sending probes, tracking their responses, and e
 
 - `src_ip` - Source IP address of the collector
 - `dst_ip` - Destination IP address of the reflector
+- `tos` - The TOS byte value of the probes being sent
 - `src_hostname` - Source hostname (from config tags)
 - `dst_hostname` - Destination hostname (from config tags)
+
+### Prometheus Server
+The prometheus server is repsonsible for scraping stats from the Collector (and Reflector if you want those stats)
 
 ## Protocol
 
@@ -97,12 +100,10 @@ UDProbe uses Protocol Buffers for packet serialization. The probe message contai
 - **Per-packet Granularity** - Unlike TCP, each UDP packet is independent
 - **No Setup/Teardown** - No handshake overhead, faster probing
 - **ICMP Limitations** - ICMP can be rate-limited or routed differently than data traffic
+- **No Extra Permissions** - UDP packets can be crafted and sent without extra permission unlike ICMP which typically requires root privlege.
 
-### Why Black Box Testing?
-
-Black box network testing doesn't require knowledge of the network topology. It simply tests whether traffic can get from point A to point B and back. This is useful for:
-
-- Identifying network-wide issues
-- Measuring impact of failures
-- Validating network changes
-- Providing KPIs for network health
+### Why Prometheus?
+- **Widely Used** - De facto standard for infrastructure and application monitoring
+- **Supported Datasource for Grafana** - Allows for easy dashboarding and querying
+- **Powerful Query Language** - PromQL allows for querying and transformation of data in powerful ways. Useful for alerting and SLA/SLO monitoring
+- **Alertmanager** - Bundled alerting with most features / integrations teams commonly want baked in

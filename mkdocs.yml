@@ -5,21 +5,7 @@ repo_url: https://github.com/nsw3550/udprobe
 repo_name: nsw3550/udprobe
 
 theme:
-  name: material
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: blue
-      accent: blue
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: blue
-      accent: light blue
-  features:
-    - navigation.instant
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.sections
+  name: readthedocs
 
 nav:
   - Home: index.md
@@ -31,12 +17,3 @@ nav:
 markdown_extensions:
   - attr_list
   - tables
-  - admonition
-  - pymdownx.details
-  - pymdownx.highlight
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-
-plugins:
-  - search:
-      lang: en

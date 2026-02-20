@@ -14,6 +14,30 @@ Network operators often find this useful for gauging the impact of network issue
 
 ## Quick Start
 
+### Docker Deployment (Easiest)
+
+```bash
+# Run Reflector
+docker run -d \
+  --name udprobe-reflector \
+  -p 8100:8100 \
+  -p 8200:8200 \
+  tenkenx/udprobe-reflector
+```
+The reflector will listen for probes on port `8100` and will expose health metrics on `http://localhost:8200/metrics`.
+
+```bash
+# Run Collector
+docker run -d \
+  --name udprobe-collector \
+  -v /path/to/config.yaml:/etc/udprobe/config.yaml \
+  -p 5200:5200 \
+  tenkenx/udprobe-collector
+```
+The collector will expose metrics on `http://localhost:5200/metrics` for Prometheus to scrape.
+
+Check out the [Configuration Reference](configuration.md) for example configurations for the collector.
+
 ### Local Development
 
 ```bash
@@ -24,25 +48,8 @@ go run github.com/nsw3550/udprobe/cmd/reflector
 go run github.com/nsw3550/udprobe/cmd/collector -udprobe.config configs/simple_example.yaml
 ```
 
-The collector will expose metrics on `http://localhost:5200/metrics` for Prometheus to scrape.
+By default these will use the same ports as the docker containers.
 
-### Docker Deployment
-
-```bash
-# Run Reflector
-docker run -d \
-  --name udprobe-reflector \
-  -p 8100:8100 \
-  -p 8200:8200 \
-  tenkenx/udprobe-reflector
-
-# Run Collector
-docker run -d \
-  --name udprobe-collector \
-  -v /path/to/config.yaml:/etc/udprobe/config.yaml \
-  -p 5200:5200 \
-  tenkenx/udprobe-collector
-```
 
 ## Prometheus Metrics
 

@@ -2,40 +2,11 @@
 
 ## Prerequisites
 
-- Go 1.24 or later
+- Go 1.24 or later (if building from source)
 - Docker (for containerized deployment)
 - Prometheus (for metrics collection)
 
-## From Source
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/nsw3550/udprobe.git
-cd udprobe
-```
-
-### Build the Binaries
-
-```bash
-# Build collector
-go build -o udprobe-collector ./cmd/collector
-
-# Build reflector
-go build -o udprobe-reflector ./cmd/reflector
-```
-
-### Run the Binaries
-
-```bash
-# Run reflector
-./udprobe-reflector
-
-# Run collector (requires configuration)
-./udprobe-collector -udprobe.config /path/to/config.yaml
-```
-
-## Docker Deployment
+## Docker Deployment (Easiest)
 
 ### Pre-built Images
 
@@ -66,7 +37,37 @@ docker run -d \
   tenkenx/udprobe-collector
 ```
 
-### Build from Source
+## From Source
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/nsw3550/udprobe.git
+cd udprobe
+```
+
+### Build the Binaries
+
+```bash
+# Build collector
+go build -o udprobe-collector ./cmd/collector
+
+# Build reflector
+go build -o udprobe-reflector ./cmd/reflector
+```
+
+### Run the Binaries
+
+```bash
+# Run reflector
+./udprobe-reflector
+
+# Run collector (requires configuration)
+./udprobe-collector -udprobe.config /path/to/config.yaml
+```
+
+
+## Building Docker Images from Source
 
 **Build Reflector:**
 
@@ -80,7 +81,7 @@ docker build -t udprobe-reflector -f cmd/reflector/Dockerfile .
 docker build -t udprobe-collector -f cmd/collector/Dockerfile .
 ```
 
-### Multi-Architecture Build
+### Multi-Architecture Docker Builds
 
 To build images for both `amd64` and `arm64` architectures:
 
@@ -106,14 +107,3 @@ docker buildx build \
   .
 ```
 
-## Prometheus Configuration
-
-Add a scrape configuration to your `prometheus.yml`:
-
-```yaml
-scrape_configs:
-  - job_name: 'udprobe'
-    static_configs:
-      - targets: ['localhost:5200']
-    scrape_interval: 30s  # Align with collector summarization interval
-```
