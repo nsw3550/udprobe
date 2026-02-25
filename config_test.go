@@ -65,7 +65,7 @@ func TestTargetConfigResolveUDPAddr(t *testing.T) {
 }
 
 func TestTargetSetTagSet(t *testing.T) {
-	tagset := exampleTargetSet.TagSet()
+	tagset := exampleTargetSet.TagSet("")
 	_, ok := tagset["1.2.3.4"]
 	if !ok {
 		t.Error("Parsed value was not populated")
@@ -76,7 +76,7 @@ func TestTargetSetTagSet(t *testing.T) {
 func TestTargetSetIntoTagSet(t *testing.T) {
 	tagset := make(TagSet)
 	tagset["example"] = Tags{"mytag": "myvalue"}
-	exampleTargetSet.IntoTagSet(tagset)
+	exampleTargetSet.IntoTagSet(tagset, "")
 	_, ok := tagset["example"]
 	if !ok {
 		t.Error("Prepopulated value was erased")
@@ -107,7 +107,7 @@ func TestTargetSetListResolvedTargets(t *testing.T) {
 }
 
 func TestTargetsConfig(t *testing.T) {
-	tagset := exampleTargetsConfig.TagSet()
+	tagset := exampleTargetsConfig.TagSet("")
 	_, ok := tagset["1.2.3.4"]
 	if !ok {
 		t.Error("Parsed value was not populated")
@@ -117,7 +117,7 @@ func TestTargetsConfig(t *testing.T) {
 func TestTargetsConfigIntoTagSet(t *testing.T) {
 	tagset := make(TagSet)
 	tagset["example"] = Tags{"mytag": "myvalue"}
-	exampleTargetsConfig.IntoTagSet(tagset)
+	exampleTargetsConfig.IntoTagSet(tagset, "")
 	_, ok := tagset["example"]
 	if !ok {
 		t.Error("Prepopulated value was erased")

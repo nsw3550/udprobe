@@ -39,6 +39,7 @@ The full configuration format provides fine-grained control over the collector's
 |-----|------|-------------|
 | `summarization` | object | Controls how test results are aggregated |
 | `api` | object | Controls the REST API server |
+| `src_hostname` | string | Global source hostname for all targets |
 | `ports` | object | Port configuration definitions |
 | `port_groups` | object | Groupings of ports for parallel testing |
 | `rate_limits` | object | Rate limiting configuration |
@@ -54,6 +55,8 @@ summarization:
 
 api:
     bind:   0.0.0.0:5200
+
+src_hostname: collector-1    # Applied to all targets
 
 ports:
     default:
@@ -82,12 +85,11 @@ targets:
           port: 8100
           tags:
             dst_hostname: reflector-1
-            src_hostname: collector-1
         - ip:   192.168.1.2
           port: 8100
           tags:
             dst_hostname: reflector-2
-            src_hostname: collector-1
+            src_hostname: collector-2    # Override global src_hostname
 ```
 ### Summarization
 
@@ -116,6 +118,18 @@ api:
 | Field | Type | Description |
 |-----|------|-------------|
 | `bind` | string | Address and port to listen on |
+
+### Source Hostname
+
+Defines a global source hostname that is applied to all targets. This can be overridden per-target in the tags section:
+
+```yaml
+src_hostname: collector-1    # Applied to all targets
+```
+
+| Field | Type | Description |
+|-----|------|-------------|
+| `src_hostname` | string | Source hostname for all targets (can be overridden per-target) |
 
 ### Ports
 

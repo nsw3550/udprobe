@@ -12,6 +12,10 @@ summarization:
 api:
     bind:   0.0.0.0:5000
 
+# Global source hostname applied to all targets.
+# Can be overridden per-target in the tags section.
+src_hostname: collector-1
+
 # Controls how ports are setup for sending probes.
 # The port number used is selected by the OS at runtime.
 ports:
@@ -56,8 +60,8 @@ tests:
 # Tags are key-value pairs which are made available with
 # the summarized results in the API. These are useful for
 # marking individual hosts and their physical groupings.
-# At present, tags used to identify the source must be
-# included for each target.
+# The global src_hostname is applied to all targets, but can be
+# overridden per-target by specifying src_hostname in tags.
 targets:
     default:
         - ip:   127.0.0.1
@@ -67,7 +71,6 @@ targets:
             dst_region: west
             dst_service: my-service
             my_tag: foobar
-            src_hostname: localhost
             src_region: west
         - ip:   127.0.0.2
           port: 8100
@@ -76,6 +79,7 @@ targets:
             dst_region: west
             dst_service: my-service
             my_tag: foo
+            # This target overrides the global src_hostname
             src_hostname: other-host
             src_region: east
         - ip:   127.0.0.3
