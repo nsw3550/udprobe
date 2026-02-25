@@ -168,6 +168,9 @@ func (tc TargetsConfig) TagSet(srcHostname string) TagSet {
 // IntoTagSet is a wrapper about the same function for each contained TargetSet
 // and merges them into an existing ts.
 func (tc TargetsConfig) IntoTagSet(ts TagSet, srcHostname string) {
+	// TODO(nwinemiller): Right now, this doesn't distinguish by TargetSet, so if a
+	//      target appears in multiple places, only the last entry will be
+	//      used.
 	for _, targetSet := range tc {
 		targetSet.IntoTagSet(ts, srcHostname)
 	}
