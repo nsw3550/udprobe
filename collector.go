@@ -137,7 +137,7 @@ func (c *Collector) SetupAPI() {
 // applied to summarized results.
 func (c *Collector) SetupTagSet() {
 	LogInfo("Setting up tag set")
-	c.ts = c.cfg.Targets.TagSet()
+	c.ts = c.cfg.Targets.TagSet(c.cfg.SrcHostname)
 }
 
 // SetupTestRunner takes parameters from the loaded config, and creates the

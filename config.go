@@ -16,6 +16,8 @@ summarization:
 api:
     bind:   0.0.0.0:5200
 
+src_hostname:
+
 ports:
     default:
         ip:         0.0.0.0
@@ -105,19 +107,26 @@ func (tc *TargetConfig) ResolveUDPAddr() (*net.UDPAddr, error) {
 type TargetSet []TargetConfig
 
 // TagSet converts the ts into TagSet struct.
-func (ts TargetSet) TagSet() TagSet {
+func (ts TargetSet) TagSet(srcHostname string) TagSet {
 	tagset := make(TagSet)
-	ts.IntoTagSet(tagset)
+	ts.IntoTagSet(tagset, srcHostname)
 	return tagset
 }
 
 // IntoTagSet is similar to TagSet but updates the provided tagset instead of
 // creating a new one.
-func (ts TargetSet) IntoTagSet(tagset TagSet) {
+func (ts TargetSet) IntoTagSet(tagset TagSet, srcHostname string) {
 	for _, target := range ts {
 		key := target.IP
-		// If the IP/key already exists, this will override it
-		tagset[key] = target.Tags
+		if tagset[key] == nil {
+			tagset[key] = make(Tags)
+		}
+		if srcHostname != "" && tagset[key]["src_hostname"] == "" {
+			tagset[key]["src_hostname"] = srcHostname
+		}
+		for k, v := range target.Tags {
+			tagset[key][k] = v
+		}
 	}
 }
 
@@ -150,20 +159,20 @@ type TargetsConfig map[string]TargetSet
 
 // TagSet is a wrapper, and merges the TagSet output for all TargetSet slices
 // within the tc.
-func (tc TargetsConfig) TagSet() TagSet {
+func (tc TargetsConfig) TagSet(srcHostname string) TagSet {
 	ts := make(TagSet)
-	tc.IntoTagSet(ts)
+	tc.IntoTagSet(ts, srcHostname)
 	return ts
 }
 
 // IntoTagSet is a wrapper about the same function for each contained TargetSet
 // and merges them into an existing ts.
-func (tc TargetsConfig) IntoTagSet(ts TagSet) {
+func (tc TargetsConfig) IntoTagSet(ts TagSet, srcHostname string) {
 	// TODO(nwinemiller): Right now, this doesn't distinguish by TargetSet, so if a
 	//      target appears in multiple places, only the last entry will be
 	//      used.
 	for _, targetSet := range tc {
-		targetSet.IntoTagSet(ts)
+		targetSet.IntoTagSet(ts, srcHostname)
 	}
 }
 
@@ -184,6 +193,7 @@ type APIConfig struct {
 type CollectorConfig struct {
 	Summarization SummarizationConfig `yaml:"summarization"`
 	API           APIConfig           `yaml:"api"`
+	SrcHostname   string              `yaml:"src_hostname"`
 	Ports         PortsConfig         `yaml:"ports"`
 	PortGroups    PortGroupsConfig    `yaml:"port_groups"`
 	RateLimits    RateLimitsConfig    `yaml:"rate_limits"`

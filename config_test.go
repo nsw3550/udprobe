@@ -65,7 +65,7 @@ func TestTargetConfigResolveUDPAddr(t *testing.T) {
 }
 
 func TestTargetSetTagSet(t *testing.T) {
-	tagset := exampleTargetSet.TagSet()
+	tagset := exampleTargetSet.TagSet("")
 	_, ok := tagset["1.2.3.4"]
 	if !ok {
 		t.Error("Parsed value was not populated")
@@ -76,7 +76,7 @@ func TestTargetSetTagSet(t *testing.T) {
 func TestTargetSetIntoTagSet(t *testing.T) {
 	tagset := make(TagSet)
 	tagset["example"] = Tags{"mytag": "myvalue"}
-	exampleTargetSet.IntoTagSet(tagset)
+	exampleTargetSet.IntoTagSet(tagset, "")
 	_, ok := tagset["example"]
 	if !ok {
 		t.Error("Prepopulated value was erased")
@@ -107,7 +107,7 @@ func TestTargetSetListResolvedTargets(t *testing.T) {
 }
 
 func TestTargetsConfig(t *testing.T) {
-	tagset := exampleTargetsConfig.TagSet()
+	tagset := exampleTargetsConfig.TagSet("")
 	_, ok := tagset["1.2.3.4"]
 	if !ok {
 		t.Error("Parsed value was not populated")
@@ -117,7 +117,7 @@ func TestTargetsConfig(t *testing.T) {
 func TestTargetsConfigIntoTagSet(t *testing.T) {
 	tagset := make(TagSet)
 	tagset["example"] = Tags{"mytag": "myvalue"}
-	exampleTargetsConfig.IntoTagSet(tagset)
+	exampleTargetsConfig.IntoTagSet(tagset, "")
 	_, ok := tagset["example"]
 	if !ok {
 		t.Error("Prepopulated value was erased")
@@ -151,5 +151,59 @@ func TestLegacyCollectorConfigToDefaultCollectorConfig(t *testing.T) {
 	_, err := lcc.ToDefaultCollectorConfig(1234)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestTargetSetTagSetWithGlobalSrcHostname(t *testing.T) {
+	ts := TargetSet{
+		{IP: "1.2.3.4", Port: 1234, Tags: Tags{"dst_hostname": "server-1"}},
+	}
+	tagset := ts.TagSet("collector-1")
+
+	if tagset["1.2.3.4"]["src_hostname"] != "collector-1" {
+		t.Error("Expected src_hostname to be 'collector-1', got:", tagset["1.2.3.4"]["src_hostname"])
+	}
+}
+
+func TestTargetSetTagSetSrcHostnameOverride(t *testing.T) {
+	ts := TargetSet{
+		{IP: "1.2.3.4", Port: 1234, Tags: Tags{
+			"dst_hostname": "server-1",
+			"src_hostname": "specific-collector",
+		}},
+	}
+	tagset := ts.TagSet("global-collector")
+
+	if tagset["1.2.3.4"]["src_hostname"] != "specific-collector" {
+		t.Error("Expected src_hostname to be 'specific-collector', got:", tagset["1.2.3.4"]["src_hostname"])
+	}
+}
+
+func TestTargetSetTagSetEmptyGlobalSrcHostname(t *testing.T) {
+	ts := TargetSet{
+		{IP: "1.2.3.4", Port: 1234, Tags: Tags{"dst_hostname": "server-1"}},
+	}
+	tagset := ts.TagSet("")
+
+	if tagset["1.2.3.4"]["src_hostname"] != "" {
+		t.Error("Expected src_hostname to be empty, got:", tagset["1.2.3.4"]["src_hostname"])
+	}
+}
+
+func TestTargetSetTagSetMixedSrcHostname(t *testing.T) {
+	ts := TargetSet{
+		{IP: "1.2.3.4", Port: 1234, Tags: Tags{"dst_hostname": "server-1"}},
+		{IP: "1.2.3.5", Port: 1234, Tags: Tags{
+			"dst_hostname": "server-2",
+			"src_hostname": "specific",
+		}},
+	}
+	tagset := ts.TagSet("global-collector")
+
+	if tagset["1.2.3.4"]["src_hostname"] != "global-collector" {
+		t.Error("Expected src_hostname to be 'global-collector' for 1.2.3.4, got:", tagset["1.2.3.4"]["src_hostname"])
+	}
+	if tagset["1.2.3.5"]["src_hostname"] != "specific" {
+		t.Error("Expected src_hostname to be 'specific' for 1.2.3.5, got:", tagset["1.2.3.5"]["src_hostname"])
 	}
 }
