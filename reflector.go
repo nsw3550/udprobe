@@ -107,8 +107,7 @@ func Send(data []byte, tos byte, conn *net.UDPConn, addr *net.UDPAddr) error {
 	h.Level = unix.IPPROTO_IP
 	h.Type = unix.IP_TOS
 	h.SetLen(unix.CmsgLen(1))
-	dataPtr := uintptr(unsafe.Pointer(h)) + uintptr(unix.SizeofCmsghdr)
-	*(*byte)(unsafe.Pointer(dataPtr)) = tos
+	*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(h)) + uintptr(unix.SizeofCmsghdr))) = tos
 	_, _, err := conn.WriteMsgUDP(data, oob, addr)
 	return err
 }
