@@ -207,3 +207,66 @@ func TestTargetSetTagSetMixedSrcHostname(t *testing.T) {
 		t.Error("Expected src_hostname to be 'specific' for 1.2.3.5, got:", tagset["1.2.3.5"]["src_hostname"])
 	}
 }
+
+var examplePortsConfig = PortsConfig{
+	"default": {IP: "0.0.0.0", Port: 0, Tos: 0, Timeout: 1000},
+	"custom":  {IP: "1.2.3.4", Port: 5000, Tos: 16, Timeout: 2000},
+}
+
+var examplePortGroupsConfig = PortGroupsConfig{
+	"default": {{Port: "default", Count: 4}},
+	"custom":  {{Port: "custom", Count: 2}},
+}
+
+var exampleRateLimitsConfig = RateLimitsConfig{
+	"default": {CPS: 4.0},
+	"high":    {CPS: 100.0},
+}
+
+func TestPortsConfigExists(t *testing.T) {
+	if !examplePortsConfig.Exists("default") {
+		t.Error("Expected 'default' to exist")
+	}
+	if !examplePortsConfig.Exists("custom") {
+		t.Error("Expected 'custom' to exist")
+	}
+	if examplePortsConfig.Exists("nonexistent") {
+		t.Error("Expected 'nonexistent' to not exist")
+	}
+}
+
+func TestPortGroupsConfigExists(t *testing.T) {
+	if !examplePortGroupsConfig.Exists("default") {
+		t.Error("Expected 'default' to exist")
+	}
+	if !examplePortGroupsConfig.Exists("custom") {
+		t.Error("Expected 'custom' to exist")
+	}
+	if examplePortGroupsConfig.Exists("nonexistent") {
+		t.Error("Expected 'nonexistent' to not exist")
+	}
+}
+
+func TestRateLimitsConfigExists(t *testing.T) {
+	if !exampleRateLimitsConfig.Exists("default") {
+		t.Error("Expected 'default' to exist")
+	}
+	if !exampleRateLimitsConfig.Exists("high") {
+		t.Error("Expected 'high' to exist")
+	}
+	if exampleRateLimitsConfig.Exists("nonexistent") {
+		t.Error("Expected 'nonexistent' to not exist")
+	}
+}
+
+func TestTargetsConfigExists(t *testing.T) {
+	if !exampleTargetsConfig.Exists("example") {
+		t.Error("Expected 'example' to exist")
+	}
+	if !exampleTargetsConfig.Exists("moar") {
+		t.Error("Expected 'moar' to exist")
+	}
+	if exampleTargetsConfig.Exists("nonexistent") {
+		t.Error("Expected 'nonexistent' to not exist")
+	}
+}

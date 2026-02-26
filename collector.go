@@ -145,8 +145,9 @@ func (c *Collector) SetupTagSet() {
 func (c *Collector) SetupTestRunner(test TestConfig) {
 	rl := c.createRateLimiter(test.RateLimit)
 	runner := NewTestRunner(c.cbc, rl)
-	// TODO(nwinemiller): This could hit a runtime error if the TargetSet name
-	// doesn't exist. So might want to break this into two parts.
+	if !c.cfg.Targets.Exists(test.Targets) {
+		HandleFatalErrorMsg(fmt.Errorf("target set %q not found in config", test.Targets), "failed to setup test runner")
+	}
 	targets, err := c.cfg.Targets[test.Targets].ListResolvedTargets()
 	if err != nil {
 		HandleFatalErrorMsg(err, "failed to resolve targets")
@@ -180,6 +181,9 @@ func (c *Collector) SetupTestRunners() {
 // createRateLimiter creates a TestRunner compliant RateLimter based on the
 // config for the named rate limiter.
 func (c *Collector) createRateLimiter(name string) *rate.Limiter {
+	if !c.cfg.RateLimits.Exists(name) {
+		HandleFatalErrorMsg(fmt.Errorf("rate limit %q not found in config", name), "failed to create rate limiter")
+	}
 	rlConfig := c.cfg.RateLimits[name]
 	rl := rate.NewLimiter(rate.Limit(rlConfig.CPS), int(rlConfig.CPS))
 	return rl
@@ -201,8 +205,14 @@ func (c *Collector) createPortOnRunner(runner *TestRunner, p PortConfig) {
 // createPortGroupOnRunner creates the named port group from the config on the
 // provided TestRunner instance.
 func (c *Collector) createPortGroupOnRunner(runner *TestRunner, name string) {
+	if !c.cfg.PortGroups.Exists(name) {
+		HandleFatalErrorMsg(fmt.Errorf("port group %q not found in config", name), "failed to create port group on runner")
+	}
 	pg := c.cfg.PortGroups[name]
 	for _, pgc := range pg {
+		if !c.cfg.Ports.Exists(pgc.Port) {
+			HandleFatalErrorMsg(fmt.Errorf("port %q not found in config", pgc.Port), "failed to create port on runner")
+		}
 		for i := int64(0); i < pgc.Count; i++ {
 			c.createPortOnRunner(runner, c.cfg.Ports[pgc.Port])
 		}

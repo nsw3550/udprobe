@@ -53,6 +53,12 @@ type PortConfig struct {
 // PortsConfig is a mapping of port "name" to a PortConfig.
 type PortsConfig map[string]PortConfig
 
+// Exists checks if a Port with the given name exists.
+func (pc PortsConfig) Exists(name string) bool {
+	_, ok := pc[name]
+	return ok
+}
+
 // PortGroupConfig describes a set of identical Ports in a PortGroup.
 type PortGroupConfig struct {
 	Port  string `yaml:"port"` // Should correspond with a PortsConfig key
@@ -62,6 +68,12 @@ type PortGroupConfig struct {
 // PortGroupsConfig is a mapping of port group "name" to PortGroupConfigs.
 type PortGroupsConfig map[string][]PortGroupConfig
 
+// Exists checks if a PortGroup with the given name exists.
+func (pgc PortGroupsConfig) Exists(name string) bool {
+	_, ok := pgc[name]
+	return ok
+}
+
 // RateLimitConfig describes the configuration for a rate limiter.
 type RateLimitConfig struct {
 	CPS float64 `yaml:"cps"` // Cycles per second
@@ -69,6 +81,12 @@ type RateLimitConfig struct {
 
 // RateLimitsConfig is a mapping of "name" to RateLimitConfig.
 type RateLimitsConfig map[string]RateLimitConfig
+
+// Exists checks if a RateLimit with the given name exists.
+func (rlc RateLimitsConfig) Exists(name string) bool {
+	_, ok := rlc[name]
+	return ok
+}
 
 // TestConfig describes the elements of a test, for use by TestRunner, which
 // correspond to their respective named elements in the config.
@@ -156,6 +174,12 @@ func (ts TargetSet) ListResolvedTargets() ([]*net.UDPAddr, error) {
 
 // TargetsConfig is a mapping of "name" to TargetSet slice.
 type TargetsConfig map[string]TargetSet
+
+// Exists checks if a TargetSet with the given name exists.
+func (tc TargetsConfig) Exists(name string) bool {
+	_, ok := tc[name]
+	return ok
+}
 
 // TagSet is a wrapper, and merges the TagSet output for all TargetSet slices
 // within the tc.
