@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
 	"strconv"
@@ -64,5 +65,5 @@ func main() {
 	}
 
 	// Begin reflecting
-	udprobe.Reflect(conn, rateLimiter)
+	udprobe.Reflect(context.Background(), conn, rateLimiter)
 }

@@ -1,6 +1,7 @@
 package udprobe
 
 import (
+	"context"
 	"net"
 	"time"
 	"unsafe"
@@ -13,7 +14,7 @@ import (
 
 // Reflect will listen on the provided UDPConn and will send back any UdpData
 // compliant packets that it receives, in compliance with the RateLimiter.
-func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
+func Reflect(ctx context.Context, conn *net.UDPConn, rl *rate.Limiter) {
 	reflectorUp.Set(1)
 	defer reflectorUp.Set(0)
 
@@ -22,6 +23,13 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 
 	LogInfo("Beginning reflection on: " + conn.LocalAddr().String())
 	for {
+		select {
+		case <-ctx.Done():
+			LogInfo("Stopping reflection on: " + conn.LocalAddr().String())
+			return
+		default:
+		}
+
 		// Use reserve so we can track when throttling happens
 		reservation := rl.Reserve()
 		delay := reservation.Delay()
@@ -33,14 +41,25 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 
 		// Receive data from the connection
 		// Not currently using `oob`
+		data, _, addr, err := Receive(dataBuf, oobBuf, conn)
+		if err != nil {
+			// If context is done, we expect errors (e.g. use of closed network connection)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			HandleMinorErrorMsg(err, "failed to receive packet")
+			reflectorPacketsReceived.Inc() // Still increment as we tried to receive
+			continue
+		}
 		reflectorPacketsReceived.Inc()
-		data, _, addr := Receive(dataBuf, oobBuf, conn)
 
 		// For this section, it might make sense to put in `Process` anyways.
 		// But for now, all we need is to make sure it's udprobe data
 		// and get the ToS value.
 		pbProbe := &pb.Probe{}
-		err := proto.Unmarshal(data, pbProbe)
+		err = proto.Unmarshal(data, pbProbe)
 		if err != nil {
 			// Else, don't reflect bad data
 			reflectorPacketsBadData.Inc()
@@ -53,10 +72,17 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 		// Re-marshal to include the new timestamp
 		// NOTE: This adds some overhead, but is more accurate for one-way delay.
 		data, err = proto.Marshal(pbProbe)
-		HandleMinorErrorMsg(err, "failed to marshal reflected probe")
+		if err != nil {
+			HandleMinorErrorMsg(err, "failed to marshal reflected probe")
+			continue
+		}
 
 		// Send the data back to sender
-		Send(data, byte(pbProbe.Tos), conn, addr)
+		err = Send(data, byte(pbProbe.Tos), conn, addr)
+		if err != nil {
+			HandleMinorErrorMsg(err, "failed to send reflected packet")
+			continue
+		}
 		reflectorPacketsReflected.Inc()
 	}
 }
@@ -64,16 +90,18 @@ func Reflect(conn *net.UDPConn, rl *rate.Limiter) {
 // Receive accepts UDP packets on the provided conn and returns the data and
 // and control message slices, as well as the UDPAddr it was received from.
 func Receive(data []byte, oob []byte, conn *net.UDPConn) (
-	[]byte, []byte, *net.UDPAddr,
+	[]byte, []byte, *net.UDPAddr, error,
 ) {
 	// Receive the data from the connection
 	dataLen, oobLen, _, addr, err := conn.ReadMsgUDP(data, oob)
-	HandleError(err)
-	return data[0:dataLen], oob[0:oobLen], addr
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return data[0:dataLen], oob[0:oobLen], addr, nil
 }
 
 // Send will send the provided data using the conn to the addr, via UDP.
-func Send(data []byte, tos byte, conn *net.UDPConn, addr *net.UDPAddr) {
+func Send(data []byte, tos byte, conn *net.UDPConn, addr *net.UDPAddr) error {
 	oob := make([]byte, unix.CmsgSpace(1))
 	h := (*unix.Cmsghdr)(unsafe.Pointer(&oob[0]))
 	h.Level = unix.IPPROTO_IP
@@ -82,5 +110,5 @@ func Send(data []byte, tos byte, conn *net.UDPConn, addr *net.UDPAddr) {
 	dataPtr := uintptr(unsafe.Pointer(h)) + uintptr(unix.SizeofCmsghdr)
 	*(*byte)(unsafe.Pointer(dataPtr)) = tos
 	_, _, err := conn.WriteMsgUDP(data, oob, addr)
-	HandleError(err)
+	return err
 }
