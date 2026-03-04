@@ -167,7 +167,9 @@ func (s *Summarizer) Stop() {
 	case <-s.stop: // Provide a safe out if already stopped
 	default:
 		LogInfo("Stopping Summarizer")
-		s.ticker.Stop()
+		if s.ticker != nil {
+			s.ticker.Stop()
+		}
 		close(s.stop)
 	}
 }
