@@ -101,9 +101,10 @@ func (api *API) RunForever() {
 	// Setup the handlers
 	// TODO(nwinemiller): It might be better to move this elsewhere?
 	api.setupHandlers()
-	// TODO(nwinemiller): Better handling around if this dies or gets shutdown. Though
-	//      if it dies, the collector is kinda useless anyways.
-	HandleFatalErrorMsg(api.server.ListenAndServe(), "API server failed")
+	err := api.server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		HandleFatalErrorMsg(err, "API server failed")
+	}
 }
 
 // SetupHandlers attaches the handlers above to the http server mux.
