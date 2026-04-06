@@ -4,22 +4,25 @@ package udprobe
 
 import (
 	"net"
+	"sync/atomic"
 	"time"
 )
 
 type PortGroup struct {
-	ports  map[*Port](chan *net.UDPAddr)
-	stop   chan bool
-	cbc    chan *InFlightProbe
-	tosend chan *net.UDPAddr
+	ports   map[*Port](chan *net.UDPAddr)
+	stop    chan bool
+	cbc     chan *InFlightProbe
+	tosend  chan *net.UDPAddr
+	running atomic.Bool
 }
 
 // Add will add a Port and channel to the PortGroup.
 //
-// This must NOT be used after running, as it is currently not threadsafe.
-// TODO(nwinemiller): In the future, if doing this is desired, add a mutex and
-//      appropriate locking.
+// Panics if called after Run() has been called.
 func (pg *PortGroup) Add(p *Port, c chan *net.UDPAddr) {
+	if pg.running.Load() {
+		panic("cannot add port to running PortGroup")
+	}
 	pg.ports[p] = c
 }
 
@@ -67,23 +70,24 @@ func (pg *PortGroup) AddNew(portStr string, tos byte, cTimeout time.Duration,
 
 // Del removes a Port from the PortGroup.
 //
-// This must NOT be done after running.
-// TODO(nwinemiller): If this is desirable, similar to Add, a mutex and locking
-//      will be needed and adds overhead.
+// Panics if called after Run() has been called.
 func (pg *PortGroup) Del(p *Port) {
+	if pg.running.Load() {
+		panic("cannot delete port from running PortGroup")
+	}
 	delete(pg.ports, p)
 }
 
 // Run will start sending/receiving on all Ports in the PortGroup, and then
 // then loop muxing inbound UDPAddrs to all ports until stopped.
 //
-// TODO(nwinemiller): Add something here to prevent ports from being added after
-//      it has started running. Otherwise, a mutex is needed to
-//      to sync things, though that may be a fine option as long
-//      as there aren't too many goroutines or ports.
+// Once Run() is called, Add() and Del() will panic if called.
+//
 // TODO(nwinemiller): Allow an arg for starting multiple goroutines? Otherwise
-//      leave that to higher level stuff.
+//
+//	leave that to higher level stuff.
 func (pg *PortGroup) Run() {
+	pg.running.Store(true)
 	// Start all of the ports
 	for p := range pg.ports {
 		p.Recv()
@@ -111,10 +115,6 @@ func (pg *PortGroup) run() {
 // To avoid blocking behavior, if a channel is not ready to receive a UDPAddr
 // it will be skipped. This was chosen because blocking on a single port blocks
 // all ports, and adding a timeout still slows down everything.
-//
-// It is NOT currently safe to make additions/removals to the PortGroup after
-// it is running. If that is desired in the future, locking will be required
-// here, similar to Add and Del.
 func (pg *PortGroup) mux(addr *net.UDPAddr) {
 	for _, c := range pg.ports {
 		// TODO(nwinemiller): Update this with a select and default in the future
