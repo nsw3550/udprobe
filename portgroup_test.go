@@ -110,3 +110,25 @@ func TestPortGroupStop(t *testing.T) {
 		t.Error("Channel wasn't closed after calling Stop")
 	}
 }
+
+func TestAddAfterRunPanics(t *testing.T) {
+	pg := NewPortGroup(stopChan, cbChan, sendChan)
+	pg.running.Store(true)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic when adding to running PortGroup")
+		}
+	}()
+	pg.Add(&Port{}, make(chan *net.UDPAddr))
+}
+
+func TestDelAfterRunPanics(t *testing.T) {
+	pg := NewPortGroup(stopChan, cbChan, sendChan)
+	pg.running.Store(true)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic when deleting from running PortGroup")
+		}
+	}()
+	pg.Del(&Port{})
+}
