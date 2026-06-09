@@ -127,13 +127,17 @@ type TargetSet []TargetConfig
 // TagSet converts the ts into TagSet struct.
 func (ts TargetSet) TagSet(srcHostname string) TagSet {
 	tagset := make(TagSet)
-	ts.IntoTagSet(tagset, srcHostname)
+	ts.IntoTagSet(tagset, srcHostname, "")
 	return tagset
 }
 
 // IntoTagSet is similar to TagSet but updates the provided tagset instead of
 // creating a new one.
-func (ts TargetSet) IntoTagSet(tagset TagSet, srcHostname string) {
+//
+// If a tag key already exists with a different value, a warning is logged
+// identifying the conflict. This can occur when the same IP appears in
+// multiple TargetSets with different tag values for the same key.
+func (ts TargetSet) IntoTagSet(tagset TagSet, srcHostname string, targetSetName string) {
 	for _, target := range ts {
 		key := target.IP
 		if tagset[key] == nil {
@@ -143,6 +147,18 @@ func (ts TargetSet) IntoTagSet(tagset TagSet, srcHostname string) {
 			tagset[key]["src_hostname"] = srcHostname
 		}
 		for k, v := range target.Tags {
+			// src_hostname is a special case: a per-target tag can override the
+			// global src_hostname parameter, which is intentional. Skip warning
+			// for this specific tag key.
+			if k == "src_hostname" {
+				tagset[key][k] = v
+				continue
+			}
+			if existing, ok := tagset[key][k]; ok && existing != v {
+				LogWarning(fmt.Sprintf("Tag conflict in TargetsConfig for IP %q: target set %q "+
+					"is overwriting tag %q (was %q, now %q)",
+					key, targetSetName, k, existing, v))
+			}
 			tagset[key][k] = v
 		}
 	}
@@ -183,6 +199,9 @@ func (tc TargetsConfig) Exists(name string) bool {
 
 // TagSet is a wrapper, and merges the TagSet output for all TargetSet slices
 // within the tc.
+//
+// NOTE: If the same IP appears in multiple TargetSets with different tag values
+// for the same key, a warning is logged and the last TargetSet's values win.
 func (tc TargetsConfig) TagSet(srcHostname string) TagSet {
 	ts := make(TagSet)
 	tc.IntoTagSet(ts, srcHostname)
@@ -192,11 +211,8 @@ func (tc TargetsConfig) TagSet(srcHostname string) TagSet {
 // IntoTagSet is a wrapper about the same function for each contained TargetSet
 // and merges them into an existing ts.
 func (tc TargetsConfig) IntoTagSet(ts TagSet, srcHostname string) {
-	// TODO(nwinemiller): Right now, this doesn't distinguish by TargetSet, so if a
-	//      target appears in multiple places, only the last entry will be
-	//      used.
-	for _, targetSet := range tc {
-		targetSet.IntoTagSet(ts, srcHostname)
+	for name, targetSet := range tc {
+		targetSet.IntoTagSet(ts, srcHostname, name)
 	}
 }
 
