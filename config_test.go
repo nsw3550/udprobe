@@ -76,7 +76,7 @@ func TestTargetSetTagSet(t *testing.T) {
 func TestTargetSetIntoTagSet(t *testing.T) {
 	tagset := make(TagSet)
 	tagset["example"] = Tags{"mytag": "myvalue"}
-	exampleTargetSet.IntoTagSet(tagset, "")
+	exampleTargetSet.IntoTagSet(tagset, "", "")
 	_, ok := tagset["example"]
 	if !ok {
 		t.Error("Prepopulated value was erased")
@@ -125,6 +125,54 @@ func TestTargetsConfigIntoTagSet(t *testing.T) {
 	_, ok = tagset["1.2.3.4"]
 	if !ok {
 		t.Error("Parsed value was not populated")
+	}
+}
+
+func TestTargetsConfigIntoTagSetDuplicateIP(t *testing.T) {
+	// Two target sets share the same IP but with different tag values for the
+	// same key. The last one processed should win, and non-conflicting tags
+	// from both should survive.
+	tc := TargetsConfig{
+		"first": {
+			{IP: "10.0.0.1", Port: 8100, Tags: Tags{"region": "west", "env": "prod"}},
+		},
+		"second": {
+			{IP: "10.0.0.1", Port: 8100, Tags: Tags{"region": "east", "env": "prod"}},
+		},
+	}
+	tagset := make(TagSet)
+	tc.IntoTagSet(tagset, "")
+
+	// Both non-conflicting tags should be present
+	if tagset["10.0.0.1"]["env"] != "prod" {
+		t.Error("Non-conflicting tag 'env' was lost")
+	}
+
+	// The conflicting tag should reflect the last writer (second)
+	if tagset["10.0.0.1"]["region"] != "east" {
+		t.Error("Conflicting tag 'region' should have last-writer-wins value 'east', got:",
+			tagset["10.0.0.1"]["region"])
+	}
+}
+
+func TestTargetsConfigIntoTagSetNoDuplicateIP(t *testing.T) {
+	// When IPs are unique across target sets, no conflicts and no overwriting.
+	tc := TargetsConfig{
+		"west": {
+			{IP: "10.0.0.1", Port: 8100, Tags: Tags{"region": "west"}},
+		},
+		"east": {
+			{IP: "10.0.0.2", Port: 8100, Tags: Tags{"region": "east"}},
+		},
+	}
+	tagset := make(TagSet)
+	tc.IntoTagSet(tagset, "")
+
+	if tagset["10.0.0.1"]["region"] != "west" {
+		t.Error("Expected region=west for 10.0.0.1, got:", tagset["10.0.0.1"]["region"])
+	}
+	if tagset["10.0.0.2"]["region"] != "east" {
+		t.Error("Expected region=east for 10.0.0.2, got:", tagset["10.0.0.2"]["region"])
 	}
 }
 
