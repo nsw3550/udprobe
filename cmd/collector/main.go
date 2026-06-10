@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/nsw3550/udprobe"
 	"golang.org/x/sys/unix"
@@ -29,7 +30,8 @@ func main() {
 		switch sig {
 		case unix.SIGINT, unix.SIGTERM:
 			udprobe.LogInfo("Received signal, shutting down")
-			// TODO(nwinemiller): Add smarter handling here for around stopping things
+			collector.Stop()
+			time.Sleep(500 * time.Millisecond) // Grace period for goroutines to drain
 			return
 		case unix.SIGHUP:
 			udprobe.LogInfo("Received SIGHUP, reloading and reconfiguring")
