@@ -94,7 +94,9 @@ func TestSendValidation(t *testing.T) {
 	)
 
 	go port.send()
-	defer func() { stop <- true }()
+	// Close, rather than send, so the send loop and the stop watcher both
+	// observe the stop signal.
+	defer close(stop)
 
 	// 1. Test nil IP
 	nilAddr := &net.UDPAddr{Port: 1234, IP: nil}
@@ -133,5 +135,102 @@ func TestIfaceToInFlightProbe(t *testing.T) {
 	_, err = IfaceToInFlightProbe("I am not a InFlightProbe")
 	if err == nil {
 		t.Error("Expected an error current conversion, but didn't get one")
+	}
+}
+
+func TestRecvStopsOnStop(t *testing.T) {
+	// Regression test for the recv() hang: on stop, recv must exit
+	// promptly even with zero traffic. The stop watcher closes the conn,
+	// which force-unblocks any in-progress read, so a clean exit within a
+	// few seconds of stop is the expected behavior. (Previously, a wedged
+	// ReadMsgUDP could hang forever, ignoring the read deadline.)
+	tosend := make(chan *net.UDPAddr)
+	stop := make(chan bool)
+	cbc := make(chan *InFlightProbe)
+
+	udpAddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	conn, _ := net.ListenUDP("udp", udpAddr)
+
+	port := NewPort(
+		conn,
+		tosend,
+		stop,
+		cbc,
+		time.Second,
+		3*time.Second,
+		200*time.Millisecond,
+	)
+
+	// Start the real recv loop and track when it exits
+	recvDone := make(chan struct{})
+	go func() {
+		port.recv()
+		close(recvDone)
+	}()
+
+	// Let recv get into its read loop
+	time.Sleep(100 * time.Millisecond)
+
+	close(stop)
+
+	select {
+	case <-recvDone:
+		// recv exited cleanly after stop
+	case <-time.After(5 * time.Second):
+		t.Fatal("recv did not exit within 5s of stop - " +
+			"the read appears wedged (deadline ignored)")
+	}
+}
+
+func TestSendStopsCleanly(t *testing.T) {
+	// After stop, send must exit cleanly. The stop watcher closes the
+	// conn, so a subsequent WriteToUDP may hit a closed conn. That must
+	// result in a clean exit, not a process kill (it previously called
+	// HandleError -> os.Exit(1) on a closed conn).
+	tosend := make(chan *net.UDPAddr)
+	stop := make(chan bool)
+	cbc := make(chan *InFlightProbe)
+
+	udpAddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	conn, _ := net.ListenUDP("udp", udpAddr)
+
+	port := NewPort(
+		conn,
+		tosend,
+		stop,
+		cbc,
+		time.Second,
+		3*time.Second,
+		200*time.Millisecond,
+	)
+
+	sendDone := make(chan struct{})
+	go func() {
+		port.send()
+		close(sendDone)
+	}()
+
+	// Let send get into its select loop
+	time.Sleep(100 * time.Millisecond)
+
+	close(stop)
+	// Wait for the stop watcher to close the conn
+	time.Sleep(100 * time.Millisecond)
+
+	// Push a target through after stop: send may not have observed the
+	// stop chan yet, so the write could hit a closed conn. Either way,
+	// send must exit promptly and the process must survive.
+	target, _ := net.ResolveUDPAddr("udp", "127.0.0.1:12345")
+	select {
+	case tosend <- target:
+	case <-time.After(time.Second):
+		// send already exited; that's fine
+	}
+
+	select {
+	case <-sendDone:
+		// send exited cleanly
+	case <-time.After(5 * time.Second):
+		t.Fatal("send did not exit within 5s of stop")
 	}
 }

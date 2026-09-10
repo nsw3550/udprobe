@@ -20,23 +20,37 @@ func LocalUDPAddr(conn *net.UDPConn) (*net.UDPAddr, string, error) {
 }
 
 // SetTos will set the IP_TOS value for the unix socket for the provided conn.
+//
+// Uses SyscallConn().Control() so the option is set directly on the
+// socket's file descriptor. Unlike conn.File(), this does not duplicate the
+// descriptor or risk leaving the socket in blocking mode, which would
+// disable netpoll and cause read deadlines to be ignored.
 func SetTos(conn *net.UDPConn, tos byte) {
-	file, err := conn.File()
-	defer FileCloseHandler(file)
+	rc, err := conn.SyscallConn()
 	HandleError(err)
-	err = unix.SetsockoptByte(int(file.Fd()), unix.IPPROTO_IP,
-		unix.IP_TOS, tos)
+	var sockErr error
+	err = rc.Control(func(fd uintptr) {
+		sockErr = unix.SetsockoptByte(int(fd), unix.IPPROTO_IP,
+			unix.IP_TOS, tos)
+	})
 	HandleError(err)
+	HandleError(sockErr)
 }
 
 // GetTos will get the IP_TOS value for the unix socket for the provided conn.
+//
+// Uses SyscallConn().Control() for the same reasons as SetTos.
 func GetTos(conn *net.UDPConn) byte {
-	file, err := conn.File()
-	defer FileCloseHandler(file)
+	rc, err := conn.SyscallConn()
 	HandleError(err)
-	value, err := unix.GetsockoptInt(int(file.Fd()), unix.IPPROTO_IP,
-		unix.IP_TOS)
+	value := 0
+	var sockErr error
+	err = rc.Control(func(fd uintptr) {
+		value, sockErr = unix.GetsockoptInt(int(fd), unix.IPPROTO_IP,
+			unix.IP_TOS)
+	})
 	HandleError(err)
+	HandleError(sockErr)
 	// Convert it to a byte and return
 	return byte(value)
 }
@@ -45,12 +59,15 @@ func GetTos(conn *net.UDPConn) byte {
 // provided conn.
 //
 // The timestamp values can later be extracted in the oob data from
-// Receive.
+// Receive. Uses SyscallConn().Control() for the same reasons as SetTos.
 func EnableTimestamps(conn *net.UDPConn) {
-	file, err := conn.File()
-	defer FileCloseHandler(file)
+	rc, err := conn.SyscallConn()
 	HandleError(err)
-	err = unix.SetsockoptInt(int(file.Fd()), unix.SOL_SOCKET,
-		unix.SO_TIMESTAMPNS, 1)
+	var sockErr error
+	err = rc.Control(func(fd uintptr) {
+		sockErr = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET,
+			unix.SO_TIMESTAMPNS, 1)
+	})
 	HandleError(err)
+	HandleError(sockErr)
 }

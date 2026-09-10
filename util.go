@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -41,18 +40,6 @@ func IDToBytes(id string) [10]byte {
 // NowUint64 returns the current time in nanoseconds as a uint64.
 func NowUint64() uint64 {
 	return uint64(time.Now().UnixNano())
-}
-
-// FileCloseHandler will close an open File and handle the resulting error.
-func FileCloseHandler(f *os.File) {
-	// NOTE: This is required, specifically for sockets/net.Conn because it
-	// would appear that calls like setting the ToS value or enabling
-	// timestamps cause this to go into a blocking state. Which then disables
-	// the functionality of SetReadDeadline, making reads block infinitely.
-	err := unix.SetNonblock(int(f.Fd()), true)
-	HandleError(err)
-	err = f.Close()
-	HandleError(err)
 }
 
 func HandleError(err error) {
