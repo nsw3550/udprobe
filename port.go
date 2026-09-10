@@ -116,7 +116,18 @@ func (p *Port) send() {
 			HandleError(err)
 			// Send the probe
 			_, err = p.conn.WriteToUDP(packedData, addr)
-			HandleError(err)
+			if err != nil {
+				// A closed conn normally means stop was signaled (the stop
+				// watcher closes the conn on stop). Exit cleanly rather than
+				// treating it as a fatal error. Any other error is fatal.
+				if netErr, ok := err.(net.Error); ok && strings.Contains(
+					netErr.Error(), "use of closed network connection") {
+					LogInfo("Conn closed while sending on: " +
+						p.conn.LocalAddr().String())
+					return
+				}
+				HandleError(err)
+			}
 			// TODO(nwinemiller): Log rate of `packets_sent`
 		}
 	}
@@ -135,13 +146,20 @@ func (p *Port) recv() {
 	dataBuf := make([]byte, 4096) // Reuse this for the received data
 	// This will be implemented for timestamps in the future
 	oobBuf := make([]byte, 4096) // Reuse this for the received oob data
+	// stopRecv performs any cleanup needed when receiving stops, so that
+	// both the stop-signal path and the closed-conn path behave the same.
+	stopRecv := func() {
+		// Don't process expirations anymore
+		// This prevents outstanding probes from reporting as loss
+		p.cache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason,
+			item *ttlcache.Item[string, *InFlightProbe]) {
+		})
+	}
 	for {
 		select {
 		case <-p.stop:
 			LogInfo("Stopping Port.recv for: " + p.conn.LocalAddr().String())
-			// Don't process expirations anymore
-			// This prevents outstanding probes from reporting as loss
-			p.cache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[string, *InFlightProbe]) {})
+			stopRecv()
 			return // Stop receiving
 		default:
 			// This is a specific point in time, so it needs to be refreshed
@@ -153,10 +171,14 @@ func (p *Port) recv() {
 			// handling. Should consolidate these at some point in UDP.
 			// Ignoring `oobLen` and `flags`for now
 			// We don't need `addr since we're matching on the signature
-			// NOTE(nwinemiller): For some reason, on stop, every once in a while,
-			//   A process will get stuck here. Specifically on the underlying
-			//   Recvmsg call in syscall. It seems to ignore the deadline, and
-			//   then stick around forever. Unsure of the cause.
+			// NOTE(nwinemiller): Previously, on stop, a process would
+			//   occasionally get stuck here, on the underlying Recvmsg
+			//   call in syscall, ignoring the read deadline. The root
+			//   cause was the socket being left in blocking mode by
+			//   conn.File()-based socket option helpers, which disables
+			//   netpoll and deadlines. That is fixed by using
+			//   SyscallConn().Control() in udp.go, and stopWatch now
+			//   closes the conn on stop to force-unblock any wedged read.
 			dataLen, _, _, _, err := p.conn.ReadMsgUDP(dataBuf, oobBuf)
 			if err != nil {
 				// Check if it's a networking error
@@ -166,12 +188,14 @@ func (p *Port) recv() {
 					continue
 				} else if ok && strings.Contains(netErr.Error(),
 					"use of closed network connection") {
-					// This means the connection is closed, so we can't use it
-					// In lieu of better cleanup behavior (for whatever case
-					// might cause this) have it cause a restart of the process
-					HandleFatalErrorMsg(err, "Attempted to read from closed conn: "+
+					// The connection was closed, which normally means stop was
+					// signaled (the stop watcher closes the conn on stop).
+					// Since stop is the only expected reason for this, exit
+					// cleanly rather than treating it as a fatal error.
+					LogInfo("Conn closed while receiving on: " +
 						p.conn.LocalAddr().String())
-					continue
+					stopRecv()
+					return
 				} else {
 					// Some other problem
 					HandleFatalErrorMsg(err, "Failure while listening on "+p.conn.LocalAddr().String())
@@ -238,6 +262,9 @@ type PathDist struct {
 // This would be triggered as a result of garbage collection, and would likely
 // be better suited elsewhere. However, this seems like a fairly simple option
 // for now, to avoid needing locks and conflicts between send/recv.
+//
+// The connection may already be closed (by stopWatch on stop); that case is
+// handled gracefully since a double-close just returns an error handled here.
 func cleanup(port *Port) {
 	LogInfo("Started closing port on: " + port.conn.LocalAddr().String())
 	err := port.conn.Close()
@@ -246,6 +273,21 @@ func cleanup(port *Port) {
 	// using this whole thing. But doesn't hurt either.
 	port.cache = nil // Dereference the cache
 	LogInfo("Finished closing port on: " + port.conn.LocalAddr().String())
+}
+
+// stopWatch waits for the stop signal and then closes the Port's connection.
+//
+// Closing the connection force-unblocks any in-progress ReadMsgUDP or
+// WriteToUDP call, even in the rare case where the read deadline has been
+// silently disabled (e.g., the fd being left in blocking mode). This makes
+// stopping deterministic, rather than relying solely on read deadlines.
+// It is started by NewPort and is intended to run for the lifetime of the
+// Port.
+func (p *Port) stopWatch() {
+	<-p.stop
+	LogInfo("Closing conn for stop on: " + p.conn.LocalAddr().String())
+	err := p.conn.Close()
+	HandleMinorErrorMsg(err, "failed to close conn during stop")
 }
 
 // New creates and returns a new Port with associated inputs, outputs,
@@ -266,6 +308,9 @@ func NewPort(conn *net.UDPConn, tosend chan *net.UDPAddr, stop chan bool,
 	// Used for wrapping the callback channel
 	port.cache.OnEviction(port.done)
 	go cache.Start()
+	// Close the conn on stop, so that a wedged read/write is unblocked
+	// deterministically.
+	go port.stopWatch()
 	// Ensure that when the port is stopped, we cleanup.
 	// This happens on GC, so it may be delayed for a bit.
 	runtime.SetFinalizer(&port, cleanup)
