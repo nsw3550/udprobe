@@ -5,6 +5,8 @@
 
 UDProbe (mix of UDP and Probe) is a library for testing and measuring network loss and latency between distributed endpoints.
 
+![UDProbe Grafana dashboard showing packet loss and latency matrices](assets/udprobe_dashboard.png)
+
 It does this by sending UDP datagrams/probes from **collectors** to **reflectors** and measuring how long it takes for them to return, if they return at all. UDP is used to provide ECMP hashing over multiple paths (a win over ICMP) without the need for setup/teardown and per-packet granularity (a win over TCP).
 
 ## Why Is This Useful
